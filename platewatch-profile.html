@@ -279,6 +279,7 @@ function renderReports(reports){
   c.innerHTML=reports.map((r,i)=>{
     const tags=parseTags(r.incident_types);
     const dateStr=formatDate(r.incident_date)+(r.incident_time?' · '+r.incident_time:'');
+    // ✅ FIXED: Include BOTH plate AND report ID for specific report disputes
     const disputeUrl='platewatch-dispute.html?plate='+encodeURIComponent(r.plate_number)+'&report='+r.id;
     return `<div class="report-card" style="animation-delay:${.45+i*.1}s">
       <div class="rc-header">
@@ -364,7 +365,7 @@ async function loadProfile(){
   document.getElementById('breadcrumbPlate').textContent=plate;
   document.getElementById('plateDisplay').textContent=plate;
 
-  // set dispute links with actual plate number
+  // ✅ FIXED: Set dispute links with encoded plate (general dispute flow - no specific report)
   const disputeUrl='platewatch-dispute.html?plate='+encodeURIComponent(plate);
   document.getElementById('disputeHeaderLink').href=disputeUrl;
   document.getElementById('disputeBoxLink').href=disputeUrl;
