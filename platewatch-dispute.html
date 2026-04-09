@@ -435,19 +435,6 @@
           </div>
 
           <button type="button" class="submit-btn" id="submitBtn" onclick="handleSubmit()">
-              hideError();
-
-  // 👇 ADD THIS EXACTLY HERE
-  if (!currentReportId) {
-    showError('Missing report reference. Please start your dispute from the report page.');
-    const btn = document.getElementById('submitBtn');
-    btn.disabled = false;
-    btn.classList.remove('loading');
-    return;
-  }
-  // 👆 END ADD
-
-  const reason = document.querySelector('input[name="reason"]:checked');
             <span class="btn-text">Submit Dispute →</span>
             <div class="btn-spinner"></div>
           </button>
