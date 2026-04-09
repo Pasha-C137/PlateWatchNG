@@ -632,7 +632,13 @@ zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function handleSubmit(){
   hideError();
-
+if (!currentReportId) {
+    showError('Missing report reference. Please start your dispute from the report page.');
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    return;
+  }
   const reason    = document.querySelector('input[name="reason"]:checked');
   const relation  = document.querySelector('input[name="relation"]:checked');
   const name      = document.getElementById('disputerName').value.trim();
