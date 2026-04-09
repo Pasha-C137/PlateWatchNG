@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,932 +5,691 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dispute a Report · PlateWatchNG</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;600&display.swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root {
-    --black:      #0d0d0d;
-    --white:      #f4f1ec;
-    --red:        #c0392b;
-    --red-dark:   #962d22;
-    --red-glow:   rgba(192,57,43,.14);
-    --amber:      #e67e22;
-    --amber-bg:   rgba(230,126,34,.07);
-    --amber-bdr:  rgba(230,126,34,.25);
-    --green:      #27ae60;
-    --grey:       #1c1c1c;
-    --grey-mid:   #252525;
-    --grey-light: #383838;
-    --input-bg:   #141414;
-    --muted:      #6e6e6e;
-    --border:     rgba(255,255,255,.07);
+  :root{
+    --black:#0d0d0d; --white:#f4f1ec; --red:#c0392b; --red-dark:#962d22;
+    --amber:#e67e22; --amber-bg:rgba(230,126,34,.07); --amber-bdr:rgba(230,126,34,.25);
+    --green:#27ae60; --grey:#1c1c1c; --grey-mid:#252525; --grey-light:#383838;
+    --input-bg:#141414; --muted:#6e6e6e; --border:rgba(255,255,255,.07);
   }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--black);color:var(--white);font-family:'DM Sans',sans-serif;font-weight:300;overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
+  @keyframes popIn{0%{transform:scale(.5);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+  @keyframes spin{to{transform:rotate(360deg)}}
 
-  *,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
-  html { scroll-behavior:smooth; }
+  /* NAV */
+  nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:20px 48px;border-bottom:1px solid var(--border);background:rgba(13,13,13,.9);backdrop-filter:blur(14px)}
+  .nav-logo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--white);text-decoration:none;display:flex;align-items:center;gap:10px}
+  .nav-dot{width:8px;height:8px;background:var(--red);border-radius:50%;animation:pulse 2s ease-in-out infinite}
+  .nav-links{display:flex;align-items:center;gap:32px;list-style:none}
+  .nav-links a{color:var(--muted);text-decoration:none;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s}
+  .nav-links a:hover{color:var(--white)}
 
-  body {
-    background: var(--black);
-    color: var(--white);
-    font-family: 'DM Sans', sans-serif;
-    font-weight: 300;
-    overflow-x: hidden;
-  }
+  /* PAGE HEADER */
+  .page-header{position:relative;z-index:1;padding:110px 48px 52px;border-bottom:1px solid var(--border);overflow:hidden}
+  .page-header::after{content:'DISPUTE';position:absolute;right:-20px;top:60px;font-family:'Bebas Neue',sans-serif;font-size:200px;letter-spacing:-4px;color:rgba(255,255,255,.018);pointer-events:none;white-space:nowrap;line-height:1}
+  .header-eyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px;opacity:0;animation:fadeUp .5s ease forwards .1s}
+  .header-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(52px,7vw,88px);letter-spacing:2px;color:var(--white);line-height:.92;margin-bottom:16px;opacity:0;animation:fadeUp .5s ease forwards .2s}
+  .header-title span{color:var(--amber)}
+  .header-sub{font-size:14px;color:var(--muted);line-height:1.75;max-width:540px;opacity:0;animation:fadeUp .5s ease forwards .3s}
 
-  body::before {
-    content:''; position:fixed; inset:0;
-    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-    pointer-events:none; z-index:0; opacity:.4;
-  }
+  /* FAIRNESS BANNER */
+  .fairness-banner{position:relative;z-index:1;padding:16px 48px;background:var(--amber-bg);border-bottom:1px solid var(--amber-bdr);display:flex;align-items:center;gap:14px;opacity:0;animation:fadeUp .5s ease forwards .35s}
+  .fairness-icon{font-size:18px;flex-shrink:0}
+  .fairness-text{font-size:13px;color:#c9984a;line-height:1.6}
+  .fairness-text strong{color:var(--amber);font-weight:500}
 
-  @keyframes fadeUp  { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes pulse   { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.7)} }
-  @keyframes popIn   { 0%{transform:scale(.5);opacity:0} 70%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
-  @keyframes slideIn { from{transform:translateX(40px);opacity:0} to{transform:translateX(0);opacity:1} }
+  /* LOADING */
+  .loading-state{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 48px;gap:14px}
+  .spinner{width:28px;height:28px;border:2px solid var(--grey-light);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite}
+  .loading-text{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted)}
 
-  /* ── NAV ── */
-  nav {
-    position:fixed; top:0; left:0; right:0; z-index:100;
-    display:flex; align-items:center; justify-content:space-between;
-    padding:20px 48px; border-bottom:1px solid var(--border);
-    background:rgba(13,13,13,.9); backdrop-filter:blur(14px);
-  }
-  .nav-logo {
-    font-family:'Bebas Neue',sans-serif; font-size:22px;
-    letter-spacing:3px; color:var(--white); text-decoration:none;
-    display:flex; align-items:center; gap:10px;
-  }
-  .nav-dot { width:8px; height:8px; background:var(--red); border-radius:50%; animation:pulse 2s ease-in-out infinite; }
-  .nav-links { display:flex; align-items:center; gap:32px; list-style:none; }
-  .nav-links a { color:var(--muted); text-decoration:none; font-size:13px; letter-spacing:1.5px; text-transform:uppercase; transition:color .2s; }
-  .nav-links a:hover { color:var(--white); }
-  .nav-back { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2px; }
+  /* ERROR STATE */
+  .error-state{position:relative;z-index:1;padding:60px 48px;text-align:center}
+  .error-state h2{font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:2px;color:var(--white);margin-bottom:12px}
+  .error-state p{font-size:14px;color:var(--muted);margin-bottom:24px}
+  .back-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:var(--grey-mid);border:1px solid var(--grey-light);border-radius:2px;color:var(--muted);text-decoration:none;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;transition:all .2s}
+  .back-btn:hover{border-color:var(--muted);color:var(--white)}
 
-  /* ── PAGE HEADER ── */
-  .page-header {
-    position:relative; z-index:1;
-    padding:110px 48px 52px;
-    border-bottom:1px solid var(--border);
-    overflow:hidden;
-  }
+  /* LAYOUT */
+  .page-layout{position:relative;z-index:1;display:grid;grid-template-columns:1fr 320px;max-width:1100px;margin:0 auto}
+  .form-col{padding:48px 52px 90px;border-right:1px solid var(--border)}
 
-  /* large background word */
-  .page-header::after {
-    content:'DISPUTE';
-    position:absolute; right:-20px; top:60px;
-    font-family:'Bebas Neue',sans-serif; font-size:200px;
-    letter-spacing:-4px; color:rgba(255,255,255,.018);
-    pointer-events:none; white-space:nowrap; line-height:1;
-  }
+  /* REFERENCE CARD */
+  .ref-card{border:1px solid var(--amber-bdr);border-radius:3px;overflow:hidden;margin-bottom:40px;background:var(--amber-bg);opacity:0;animation:fadeUp .5s ease forwards .4s}
+  .ref-card-header{padding:12px 18px;border-bottom:1px solid var(--amber-bdr);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--amber);display:flex;align-items:center;justify-content:space-between}
+  .ref-card-body{padding:18px;display:flex;gap:20px;align-items:flex-start}
+  .ref-plate{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:4px;color:var(--white);background:var(--grey-mid);padding:8px 16px;border-radius:2px;flex-shrink:0;white-space:nowrap}
+  .ref-details{flex:1}
+  .ref-row{display:flex;gap:8px;align-items:baseline;margin-bottom:6px;font-size:12px}
+  .ref-label{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+  .ref-value{color:var(--white)}
+  .ref-tag{display:inline-block;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:20px;font-family:'JetBrains Mono',monospace;background:rgba(192,57,43,.2);color:#e74c3c;margin-right:4px}
 
-  .header-eyebrow {
-    font-family:'JetBrains Mono',monospace; font-size:10px;
-    letter-spacing:4px; text-transform:uppercase; color:var(--amber);
-    margin-bottom:12px;
-    opacity:0; animation:fadeUp .5s ease forwards .1s;
-  }
+  /* FORM SECTIONS */
+  .form-section{margin-bottom:44px;opacity:0;animation:fadeUp .5s ease forwards}
+  .form-section:nth-child(2){animation-delay:.45s}
+  .form-section:nth-child(3){animation-delay:.55s}
+  .form-section:nth-child(4){animation-delay:.65s}
+  .form-section:nth-child(5){animation-delay:.75s}
+  .section-header-row{display:flex;align-items:center;gap:14px;margin-bottom:22px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+  .section-num{width:32px;height:32px;border-radius:2px;flex-shrink:0;background:var(--grey-mid);border:1px solid var(--grey-light);color:var(--muted);font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;display:flex;align-items:center;justify-content:center}
+  .section-title-text{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--white)}
+  .section-desc{font-size:12px;color:var(--muted);margin-top:2px}
 
-  .header-title {
-    font-family:'Bebas Neue',sans-serif;
-    font-size:clamp(52px,7vw,88px); letter-spacing:2px;
-    color:var(--white); line-height:.92; margin-bottom:16px;
-    opacity:0; animation:fadeUp .5s ease forwards .2s;
-  }
-  .header-title span { color:var(--amber); }
+  /* INPUTS */
+  .field-group{margin-bottom:18px}
+  .field-row{display:flex;gap:16px;margin-bottom:18px}
+  .field-row .field-group{flex:1;margin-bottom:0}
+  .field-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .required-star{color:var(--amber)}
+  .optional-tag{font-size:9px;color:#3a3a3a;background:var(--grey-mid);padding:2px 6px;border-radius:2px;letter-spacing:1px}
+  input[type="text"],input[type="email"],select,textarea{width:100%;background:var(--input-bg);border:1px solid var(--grey-light);border-radius:2px;padding:13px 16px;color:var(--white);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:300;outline:none;transition:border-color .2s,box-shadow .2s;appearance:none;-webkit-appearance:none}
+  input:focus,select:focus,textarea:focus{border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-bg)}
+  input::placeholder,textarea::placeholder{color:#2e2e2e}
+  select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23555' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;background-color:var(--input-bg);padding-right:36px;cursor:pointer}
+  select option{background:var(--grey);color:var(--white)}
+  textarea{resize:vertical;min-height:110px;line-height:1.75}
+  .field-hint{font-size:11px;color:#3a3a3a;margin-top:6px;line-height:1.5}
 
-  .header-sub {
-    font-size:14px; color:var(--muted); line-height:1.75; max-width:540px;
-    opacity:0; animation:fadeUp .5s ease forwards .3s;
-  }
+  /* ERROR BOX */
+  .error-box{background:rgba(192,57,43,.1);border:1px solid rgba(192,57,43,.3);border-radius:2px;padding:14px 18px;margin-bottom:20px;display:none}
+  .error-box p{font-size:12px;color:#e74c3c;line-height:1.7;font-family:'JetBrains Mono',monospace;letter-spacing:.5px}
 
-  /* ── FAIRNESS BANNER ── */
-  .fairness-banner {
-    position:relative; z-index:1;
-    margin:0; padding:16px 48px;
-    background:var(--amber-bg);
-    border-bottom:1px solid var(--amber-bdr);
-    display:flex; align-items:center; gap:14px;
-    opacity:0; animation:fadeUp .5s ease forwards .35s;
-  }
-  .fairness-icon { font-size:18px; flex-shrink:0; }
-  .fairness-text { font-size:13px; color:#c9984a; line-height:1.6; }
-  .fairness-text strong { color:var(--amber); font-weight:500; }
+  /* REASON CARDS */
+  .reason-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .reason-radio{display:none}
+  .reason-label{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--grey-light);border-radius:2px;cursor:pointer;transition:all .15s;user-select:none}
+  .reason-label:hover{background:rgba(255,255,255,.02)}
+  .reason-radio:checked+.reason-label{border-color:var(--amber);background:var(--amber-bg)}
+  .reason-icon{font-size:20px}
+  .reason-title{font-size:13px;color:var(--white);font-weight:400}
+  .reason-sub{font-size:11px;color:var(--muted);line-height:1.5}
+  .reason-radio:checked+.reason-label .reason-title{color:var(--amber)}
 
-  /* ── LAYOUT ── */
-  .page-layout {
-    position:relative; z-index:1;
-    display:grid; grid-template-columns:1fr 320px;
-    max-width:1100px; margin:0 auto;
-  }
+  /* RELATIONSHIP TOGGLES */
+  .toggle-row{display:flex;gap:8px;flex-wrap:wrap}
+  .toggle-radio{display:none}
+  .toggle-label{padding:10px 18px;border:1px solid var(--grey-light);border-radius:2px;cursor:pointer;font-size:13px;color:var(--muted);transition:all .15s;user-select:none}
+  .toggle-label:hover{color:var(--white)}
+  .toggle-radio:checked+.toggle-label{border-color:var(--amber);color:var(--amber);background:var(--amber-bg)}
 
-  /* ══════════════════════════════════════════
-     FORM COLUMN
-  ══════════════════════════════════════════ */
-  .form-col { padding:48px 52px 90px; border-right:1px solid var(--border); }
+  /* UPLOAD */
+  .upload-zone{border:1px dashed var(--grey-light);border-radius:3px;padding:32px 24px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+  .upload-zone:hover{border-color:var(--amber);background:var(--amber-bg)}
+  .upload-zone.drag-over{border-color:var(--amber);background:var(--amber-bg)}
+  .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .upload-icon{font-size:28px;margin-bottom:10px}
+  .upload-title{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .upload-sub{font-size:12px;color:#3a3a3a}
+  .upload-preview{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+  .preview-thumb{width:68px;height:68px;border-radius:2px;object-fit:cover;border:1px solid var(--grey-light)}
+  .preview-file{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--grey-mid);border:1px solid var(--grey-light);border-radius:2px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)}
 
-  /* ── REPORT REFERENCE CARD ── */
-  .ref-card {
-    border:1px solid var(--amber-bdr);
-    border-radius:3px; overflow:hidden; margin-bottom:40px;
-    background:var(--amber-bg);
-    opacity:0; animation:fadeUp .5s ease forwards .4s;
-  }
+  /* IDENTITY NOTE */
+  .identity-note{display:flex;gap:12px;align-items:flex-start;padding:16px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:2px;margin-bottom:18px}
+  .identity-note-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+  .identity-note p{font-size:12px;color:var(--muted);line-height:1.65}
+  .identity-note strong{color:var(--white);font-weight:500}
 
-  .ref-card-header {
-    padding:12px 18px; border-bottom:1px solid var(--amber-bdr);
-    font-family:'JetBrains Mono',monospace; font-size:10px;
-    letter-spacing:2px; text-transform:uppercase; color:var(--amber);
-    display:flex; align-items:center; justify-content:space-between;
-  }
+  /* CONFIRM */
+  .confirm-block{display:flex;gap:14px;align-items:flex-start;padding:18px;border:1px solid var(--border);border-radius:2px;background:var(--grey-mid);margin-bottom:24px;cursor:pointer;transition:border-color .2s}
+  .confirm-block:hover{border-color:var(--grey-light)}
+  .confirm-block.checked{border-color:var(--green);background:rgba(39,174,96,.05)}
+  .confirm-checkbox{width:20px;height:20px;border:1px solid var(--grey-light);border-radius:2px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:1px}
+  .confirm-block.checked .confirm-checkbox{background:var(--green);border-color:var(--green)}
+  .confirm-check-icon{font-size:12px;color:var(--white);display:none}
+  .confirm-block.checked .confirm-check-icon{display:block}
+  .confirm-text{font-size:13px;color:var(--muted);line-height:1.65}
+  .confirm-text strong{color:var(--white);font-weight:500}
 
-  .ref-card-body { padding:18px; display:flex; gap:20px; align-items:flex-start; }
+  /* SUBMIT */
+  .submit-btn{width:100%;background:var(--amber);color:var(--white);border:none;padding:18px 32px;border-radius:2px;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;transition:background .2s,transform .1s;display:flex;align-items:center;justify-content:center;gap:12px}
+  .submit-btn:hover:not(:disabled){background:#c8711d}
+  .submit-btn:active:not(:disabled){transform:scale(.99)}
+  .submit-btn:disabled{background:var(--grey-light);cursor:not-allowed;opacity:.6}
+  .btn-spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+  .submit-btn.loading .btn-spinner{display:block}
+  .submit-btn.loading .btn-text{opacity:.7}
+  .submit-note{font-size:11px;color:#3a3a3a;margin-top:12px;line-height:1.6;font-family:'JetBrains Mono',monospace;letter-spacing:.5px}
 
-  .ref-plate {
-    font-family:'Bebas Neue',sans-serif; font-size:28px;
-    letter-spacing:4px; color:var(--white);
-    background:var(--grey-mid); padding:8px 16px; border-radius:2px;
-    flex-shrink:0; white-space:nowrap;
-  }
+  /* SUCCESS OVERLAY */
+  .success-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(13,13,13,.97);backdrop-filter:blur(14px);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px}
+  .success-overlay.visible{display:flex}
+  .success-icon{font-size:64px;margin-bottom:24px;animation:popIn .5s cubic-bezier(.34,1.56,.64,1) forwards}
+  .success-title{font-family:'Bebas Neue',sans-serif;font-size:56px;letter-spacing:2px;color:var(--white);margin-bottom:12px}
+  .success-sub{font-size:15px;color:var(--muted);max-width:440px;line-height:1.75;margin-bottom:28px}
+  .success-timeline{display:flex;flex-direction:column;gap:12px;margin-bottom:36px;text-align:left;max-width:380px;width:100%}
+  .stl-item{display:flex;align-items:flex-start;gap:14px;padding:14px 18px;background:var(--grey);border:1px solid var(--border);border-radius:2px}
+  .stl-icon{font-size:18px;flex-shrink:0}
+  .stl-text{font-size:13px;color:var(--muted);line-height:1.6}
+  .stl-text strong{color:var(--white);font-weight:500;display:block;margin-bottom:2px}
+  .success-actions{display:flex;gap:12px}
+  .success-btn{padding:14px 28px;border-radius:2px;text-decoration:none;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .2s;border:1px solid}
+  .success-btn.primary{background:var(--amber);color:var(--white);border-color:var(--amber)}
+  .success-btn.primary:hover{background:#c8711d}
+  .success-btn.ghost{background:transparent;color:var(--muted);border-color:var(--grey-light)}
+  .success-btn.ghost:hover{border-color:var(--muted);color:var(--white)}
 
-  .ref-details { flex:1; }
-  .ref-row {
-    display:flex; gap:8px; align-items:baseline; margin-bottom:6px;
-    font-size:12px;
-  }
-  .ref-label { color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:1px; text-transform:uppercase; white-space:nowrap; }
-  .ref-value { color:var(--white); }
+  /* SIDEBAR */
+  .sidebar-col{padding:48px 28px}
+  .sidebar-block{margin-bottom:18px;border:1px solid var(--border);border-radius:3px;opacity:0;animation:fadeUp .5s ease forwards}
+  .sidebar-block:nth-child(1){animation-delay:.5s}
+  .sidebar-block:nth-child(2){animation-delay:.65s}
+  .sidebar-block:nth-child(3){animation-delay:.8s}
+  .sidebar-block:nth-child(4){animation-delay:.95s}
+  .sb-title{padding:12px 16px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);background:rgba(255,255,255,.02)}
+  .sb-body{padding:16px}
+  .process-step{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);align-items:flex-start}
+  .process-step:last-child{border-bottom:none}
+  .ps-num{width:22px;height:22px;border-radius:50%;flex-shrink:0;background:var(--grey-mid);border:1px solid var(--grey-light);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)}
+  .ps-text{font-size:12px;color:var(--muted);line-height:1.65}
+  .ps-text strong{color:var(--white);font-weight:500;display:block;margin-bottom:2px}
+  .outcome-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px;color:var(--muted);line-height:1.6}
+  .outcome-item:last-child{border-bottom:none}
+  .outcome-icon{flex-shrink:0;font-size:14px}
+  .warning-box{background:rgba(192,57,43,.06);border:1px solid rgba(192,57,43,.2);border-radius:2px;padding:14px}
+  .warning-box p{font-size:12px;color:#a04040;line-height:1.65}
+  .warning-box strong{color:#e74c3c;font-weight:500}
+  .contact-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px;color:var(--muted)}
+  .contact-item:last-child{border-bottom:none}
+  .contact-icon{font-size:14px;flex-shrink:0}
+  .contact-link{color:var(--muted);text-decoration:none;transition:color .2s}
+  .contact-link:hover{color:var(--white)}
 
-  .ref-tag {
-    display:inline-block; font-size:9px; letter-spacing:1px; text-transform:uppercase;
-    padding:3px 8px; border-radius:20px; font-family:'JetBrains Mono',monospace;
-    background:rgba(192,57,43,.2); color:#e74c3c; margin-right:4px;
-  }
+  /* FOOTER */
+  footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:28px 48px;display:flex;align-items:center;justify-content:space-between}
+  .footer-logo{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--muted)}
+  .footer-links{display:flex;gap:24px;list-style:none}
+  .footer-links a{font-size:11px;color:#555;text-decoration:none;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s}
+  .footer-links a:hover{color:var(--muted)}
+  .footer-copy{font-size:11px;color:#444;font-family:'JetBrains Mono',monospace}
 
-  /* ── FORM SECTIONS ── */
-  .form-section {
-    margin-bottom:44px;
-    opacity:0; animation:fadeUp .5s ease forwards;
-  }
-  .form-section:nth-child(2){ animation-delay:.45s; }
-  .form-section:nth-child(3){ animation-delay:.55s; }
-  .form-section:nth-child(4){ animation-delay:.65s; }
-  .form-section:nth-child(5){ animation-delay:.75s; }
-
-  .section-header-row {
-    display:flex; align-items:center; gap:14px; margin-bottom:22px;
-    padding-bottom:14px; border-bottom:1px solid var(--border);
-  }
-
-  .section-num {
-    width:32px; height:32px; border-radius:2px; flex-shrink:0;
-    background:var(--grey-mid); border:1px solid var(--grey-light);
-    color:var(--muted); font-family:'Bebas Neue',sans-serif;
-    font-size:18px; letter-spacing:1px;
-    display:flex; align-items:center; justify-content:center;
-  }
-
-  .section-title-text { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:2px; color:var(--white); }
-  .section-desc       { font-size:12px; color:var(--muted); margin-top:2px; }
-
-  /* inputs */
-  .field-group { margin-bottom:18px; }
-  .field-row   { display:flex; gap:16px; margin-bottom:18px; }
-  .field-row .field-group { flex:1; margin-bottom:0; }
-
-  .field-label {
-    font-family:'JetBrains Mono',monospace; font-size:10px;
-    letter-spacing:2px; text-transform:uppercase; color:var(--muted);
-    margin-bottom:8px; display:flex; align-items:center; gap:6px;
-  }
-  .required-star { color:var(--amber); }
-  .optional-tag  { font-size:9px; color:#3a3a3a; background:var(--grey-mid); padding:2px 6px; border-radius:2px; letter-spacing:1px; }
-
-  input[type="text"],
-  input[type="email"],
-  select,
-  textarea {
-    width:100%; background:var(--input-bg);
-    border:1px solid var(--grey-light); border-radius:2px;
-    padding:13px 16px; color:var(--white);
-    font-family:'DM Sans',sans-serif; font-size:14px; font-weight:300;
-    outline:none; transition:border-color .2s, box-shadow .2s;
-    appearance:none; -webkit-appearance:none;
-  }
-
-  input:focus, select:focus, textarea:focus {
-    border-color:var(--amber);
-    box-shadow:0 0 0 3px var(--amber-bg);
-  }
-
-  input::placeholder, textarea::placeholder { color:#2e2e2e; }
-
-  select {
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23555' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
-    background-repeat:no-repeat; background-position:right 14px center;
-    background-color:var(--input-bg); padding-right:36px; cursor:pointer;
-  }
-  select option { background:var(--grey); color:var(--white); }
-
-  textarea { resize:vertical; min-height:110px; line-height:1.75; }
-
-  .field-hint { font-size:11px; color:#3a3a3a; margin-top:6px; line-height:1.5; }
-
-  /* ── DISPUTE REASON CARDS ── */
-  .reason-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-
-  .reason-radio { display:none; }
-
-  .reason-label {
-    display:flex; flex-direction:column; gap:6px;
-    padding:14px 16px; border:1px solid var(--grey-light);
-    border-radius:2px; cursor:pointer; transition:all .15s;
-    user-select:none;
-  }
-  .reason-label:hover { border-color:var(--grey-light); background:rgba(255,255,255,.02); }
-
-  .reason-radio:checked + .reason-label {
-    border-color:var(--amber);
-    background:var(--amber-bg);
-  }
-
-  .reason-icon  { font-size:20px; }
-  .reason-title { font-size:13px; color:var(--white); font-weight:400; }
-  .reason-sub   { font-size:11px; color:var(--muted); line-height:1.5; }
-
-  .reason-radio:checked + .reason-label .reason-title { color:var(--amber); }
-
-  /* ── RELATIONSHIP TOGGLE ── */
-  .toggle-row { display:flex; gap:8px; flex-wrap:wrap; }
-
-  .toggle-radio { display:none; }
-  .toggle-label {
-    padding:10px 18px; border:1px solid var(--grey-light);
-    border-radius:2px; cursor:pointer; font-size:13px; color:var(--muted);
-    transition:all .15s; user-select:none;
-  }
-  .toggle-label:hover { color:var(--white); }
-  .toggle-radio:checked + .toggle-label {
-    border-color:var(--amber); color:var(--amber); background:var(--amber-bg);
-  }
-
-  /* ── UPLOAD ── */
-  .upload-zone {
-    border:1px dashed var(--grey-light); border-radius:3px;
-    padding:32px 24px; text-align:center; cursor:pointer;
-    transition:all .2s; position:relative; overflow:hidden;
-  }
-  .upload-zone:hover { border-color:var(--amber); background:var(--amber-bg); }
-  .upload-zone.drag-over { border-color:var(--amber); background:var(--amber-bg); }
-  .upload-zone input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
-  .upload-icon  { font-size:28px; margin-bottom:10px; }
-  .upload-title { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
-  .upload-sub   { font-size:12px; color:#3a3a3a; }
-
-  .upload-preview { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
-  .preview-thumb  { width:68px; height:68px; border-radius:2px; object-fit:cover; border:1px solid var(--grey-light); }
-  .preview-file   { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--grey-mid); border:1px solid var(--grey-light); border-radius:2px; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); }
-
-  /* ── IDENTITY NOTE ── */
-  .identity-note {
-    display:flex; gap:12px; align-items:flex-start;
-    padding:16px; background:rgba(255,255,255,.02);
-    border:1px solid var(--border); border-radius:2px; margin-bottom:18px;
-  }
-  .identity-note-icon { font-size:16px; flex-shrink:0; margin-top:1px; }
-  .identity-note p { font-size:12px; color:var(--muted); line-height:1.65; }
-  .identity-note strong { color:var(--white); font-weight:500; }
-
-  /* ── CONFIRM ── */
-  .confirm-block {
-    display:flex; gap:14px; align-items:flex-start;
-    padding:18px; border:1px solid var(--border); border-radius:2px;
-    background:var(--grey-mid); margin-bottom:24px; cursor:pointer;
-    transition:border-color .2s;
-  }
-  .confirm-block:hover { border-color:var(--grey-light); }
-  .confirm-block.checked { border-color:var(--green); background:rgba(39,174,96,.05); }
-
-  .confirm-checkbox {
-    width:20px; height:20px; border:1px solid var(--grey-light); border-radius:2px;
-    flex-shrink:0; display:flex; align-items:center; justify-content:center;
-    transition:all .2s; margin-top:1px;
-  }
-  .confirm-block.checked .confirm-checkbox { background:var(--green); border-color:var(--green); }
-  .confirm-check-icon { font-size:12px; color:var(--white); display:none; }
-  .confirm-block.checked .confirm-check-icon { display:block; }
-  .confirm-text { font-size:13px; color:var(--muted); line-height:1.65; }
-  .confirm-text strong { color:var(--white); font-weight:500; }
-
-  /* ── SUBMIT ── */
-  .submit-btn {
-    width:100%; background:var(--amber); color:var(--white); border:none;
-    padding:18px 32px; border-radius:2px; cursor:pointer;
-    font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:3px;
-    transition:background .2s, transform .1s;
-  }
-  .submit-btn:hover { background:#c8711d; }
-  .submit-btn:active { transform:scale(.99); }
-  .submit-btn:disabled { background:var(--grey-light); cursor:not-allowed; opacity:.6; }
-
-  .submit-note { font-size:11px; color:#3a3a3a; margin-top:12px; line-height:1.6; font-family:'JetBrains Mono',monospace; letter-spacing:.5px; }
-
-  /* ── SUCCESS OVERLAY ── */
-  .success-overlay {
-    display:none; position:fixed; inset:0; z-index:200;
-    background:rgba(13,13,13,.97); backdrop-filter:blur(14px);
-    flex-direction:column; align-items:center; justify-content:center;
-    text-align:center; padding:40px;
-  }
-  .success-overlay.visible { display:flex; }
-
-  .success-icon  { font-size:64px; margin-bottom:24px; animation:popIn .5s cubic-bezier(.34,1.56,.64,1) forwards; }
-  .success-title { font-family:'Bebas Neue',sans-serif; font-size:56px; letter-spacing:2px; color:var(--white); margin-bottom:12px; }
-  .success-sub   { font-size:15px; color:var(--muted); max-width:440px; line-height:1.75; margin-bottom:28px; }
-
-  .success-timeline {
-    display:flex; flex-direction:column; gap:12px; margin-bottom:36px;
-    text-align:left; max-width:380px; width:100%;
-  }
-  .stl-item {
-    display:flex; align-items:flex-start; gap:14px;
-    padding:14px 18px; background:var(--grey);
-    border:1px solid var(--border); border-radius:2px;
-  }
-  .stl-icon { font-size:18px; flex-shrink:0; }
-  .stl-text { font-size:13px; color:var(--muted); line-height:1.6; }
-  .stl-text strong { color:var(--white); font-weight:500; display:block; margin-bottom:2px; }
-
-  .success-actions { display:flex; gap:12px; }
-  .success-btn {
-    padding:14px 28px; border-radius:2px; text-decoration:none;
-    font-family:'JetBrains Mono',monospace; font-size:11px;
-    letter-spacing:2px; text-transform:uppercase; cursor:pointer; transition:all .2s;
-  }
-  .success-btn.primary { background:var(--amber); color:var(--white); border:1px solid var(--amber); }
-  .success-btn.primary:hover { background:#c8711d; }
-  .success-btn.ghost   { background:transparent; color:var(--muted); border:1px solid var(--grey-light); }
-  .success-btn.ghost:hover { border-color:var(--muted); color:var(--white); }
-
-  /* ══════════════════════════════════════════
-     SIDEBAR
-  ══════════════════════════════════════════ */
-  .sidebar-col { padding:48px 28px; }
-
-  .sidebar-block {
-    margin-bottom:18px; border:1px solid var(--border); border-radius:3px;
-    opacity:0; animation:fadeUp .5s ease forwards;
-  }
-  .sidebar-block:nth-child(1){ animation-delay:.5s; }
-  .sidebar-block:nth-child(2){ animation-delay:.65s; }
-  .sidebar-block:nth-child(3){ animation-delay:.8s; }
-  .sidebar-block:nth-child(4){ animation-delay:.95s; }
-
-  .sb-title {
-    padding:12px 16px; border-bottom:1px solid var(--border);
-    font-family:'JetBrains Mono',monospace; font-size:10px;
-    letter-spacing:2px; text-transform:uppercase; color:var(--muted);
-    background:rgba(255,255,255,.02);
-  }
-  .sb-body { padding:16px; }
-
-  .process-step {
-    display:flex; gap:12px; padding:10px 0;
-    border-bottom:1px solid rgba(255,255,255,.04);
-    align-items:flex-start;
-  }
-  .process-step:last-child { border-bottom:none; }
-
-  .ps-num {
-    width:22px; height:22px; border-radius:50%; flex-shrink:0;
-    background:var(--grey-mid); border:1px solid var(--grey-light);
-    display:flex; align-items:center; justify-content:center;
-    font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted);
-  }
-  .ps-text { font-size:12px; color:var(--muted); line-height:1.65; }
-  .ps-text strong { color:var(--white); font-weight:500; display:block; margin-bottom:2px; }
-
-  .outcome-item {
-    display:flex; gap:10px; padding:10px 0;
-    border-bottom:1px solid rgba(255,255,255,.04);
-    font-size:12px; color:var(--muted); line-height:1.6;
-  }
-  .outcome-item:last-child { border-bottom:none; }
-  .outcome-icon { flex-shrink:0; font-size:14px; }
-
-  .warning-box {
-    background:rgba(192,57,43,.06); border:1px solid rgba(192,57,43,.2);
-    border-radius:2px; padding:14px;
-  }
-  .warning-box p { font-size:12px; color:#a04040; line-height:1.65; }
-  .warning-box strong { color:#e74c3c; font-weight:500; }
-
-  .contact-item {
-    display:flex; align-items:center; gap:10px; padding:10px 0;
-    border-bottom:1px solid rgba(255,255,255,.04); font-size:12px; color:var(--muted);
-  }
-  .contact-item:last-child { border-bottom:none; }
-  .contact-icon { font-size:14px; flex-shrink:0; }
-  .contact-link { color:var(--muted); text-decoration:none; transition:color .2s; }
-  .contact-link:hover { color:var(--white); }
-
-  /* ── FOOTER ── */
-  footer {
-    position:relative; z-index:1;
-    border-top:1px solid var(--border); padding:28px 48px;
-    display:flex; align-items:center; justify-content:space-between;
-  }
-  .footer-logo  { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:3px; color:var(--muted); }
-  .footer-links { display:flex; gap:24px; list-style:none; }
-  .footer-links a { font-size:11px; color:#444; text-decoration:none; letter-spacing:1.5px; text-transform:uppercase; transition:color .2s; }
-  .footer-links a:hover { color:var(--muted); }
-  .footer-copy  { font-size:11px; color:#3a3a3a; font-family:'JetBrains Mono',monospace; }
-
-  /* ── RESPONSIVE ── */
-  @media (max-width:900px) {
-    nav { padding:16px 20px; }
-    .nav-links li:not(:last-child){ display:none; }
-    .page-header { padding:100px 20px 40px; }
-    .page-header::after { font-size:100px; right:-10px; }
-    .fairness-banner { padding:14px 20px; }
-    .page-layout { grid-template-columns:1fr; }
-    .form-col { border-right:none; padding:32px 20px 60px; }
-    .sidebar-col { padding:24px 20px; }
-    .reason-grid { grid-template-columns:1fr; }
-    .field-row { flex-direction:column; }
-    footer { flex-direction:column; gap:16px; padding:24px 20px; text-align:center; }
-    .footer-links { flex-wrap:wrap; justify-content:center; }
-    .success-actions { flex-direction:column; width:100%; max-width:320px; }
+  @media(max-width:900px){
+    nav{padding:16px 20px}
+    .nav-links li:not(:last-child){display:none}
+    .page-header{padding:100px 20px 40px}
+    .page-header::after{font-size:100px;right:-10px}
+    .fairness-banner{padding:14px 20px}
+    .page-layout{grid-template-columns:1fr}
+    .form-col{border-right:none;padding:32px 20px 60px}
+    .sidebar-col{padding:24px 20px}
+    .reason-grid{grid-template-columns:1fr}
+    .field-row{flex-direction:column}
+    footer{flex-direction:column;gap:16px;padding:24px 20px;text-align:center}
+    .footer-links{flex-wrap:wrap;justify-content:center}
+    .success-actions{flex-direction:column;width:100%;max-width:320px}
   }
 </style>
 </head>
 <body>
 
-<!-- ── SUCCESS OVERLAY ── -->
+<!-- SUCCESS OVERLAY -->
 <div class="success-overlay" id="successOverlay">
   <div class="success-icon">📋</div>
   <h2 class="success-title">Dispute Filed</h2>
-  <p class="success-sub">
-    Your dispute has been received and logged. Our review team will assess it within 48 hours.
-    You will be notified by email of the outcome.
-  </p>
-
+  <p class="success-sub">Your dispute has been received and logged. Our review team will assess it within 48 hours and notify you by email.</p>
   <div class="success-timeline">
     <div class="stl-item">
       <div class="stl-icon">📧</div>
-      <div class="stl-text">
-        <strong>Step 1 — Confirmation Email</strong>
-        Check your inbox. We've sent a confirmation of your dispute submission.
-      </div>
+      <div class="stl-text"><strong>Step 1 — Confirmation Email</strong>Check your inbox. We've sent a confirmation of your dispute submission.</div>
     </div>
     <div class="stl-item">
       <div class="stl-icon">🔍</div>
-      <div class="stl-text">
-        <strong>Step 2 — Review (within 48hrs)</strong>
-        Our team reviews the original report alongside your dispute and any evidence submitted.
-      </div>
+      <div class="stl-text"><strong>Step 2 — Review (within 48hrs)</strong>Our team reviews the original report alongside your dispute and any evidence submitted.</div>
     </div>
     <div class="stl-item">
       <div class="stl-icon">⚖️</div>
-      <div class="stl-text">
-        <strong>Step 3 — Decision</strong>
-        The report is either upheld, amended, or removed. You will be notified by email.
-      </div>
+      <div class="stl-text"><strong>Step 3 — Decision</strong>The report is either upheld, amended, or removed. You will be notified by email.</div>
     </div>
   </div>
-
   <div class="success-actions">
-    <a href="platewatch-homepage-v2.html" class="success-btn primary">← Back to Home</a>
-    <a href="platewatch-profile.html" class="success-btn ghost">View Report Page</a>
+    <a href="index.html" class="success-btn primary">← Back to Home</a>
+    <a href="#" id="backToProfile" class="success-btn ghost">View Report Page</a>
   </div>
 </div>
 
-<!-- ── NAV ── -->
+<!-- NAV -->
 <nav>
-  <a href="platewatch-homepage-v2.html" class="nav-logo">
-    <div class="nav-dot"></div>
-    PlateWatch<span style="color:var(--red)">NG</span>
-  </a>
+  <a href="index.html" class="nav-logo"><div class="nav-dot"></div>PlateWatch<span style="color:var(--red)">NG</span></a>
   <ul class="nav-links">
-    <li><a href="platewatch-profile.html" class="nav-back">← Back to Report</a></li>
+    <li><a href="#" id="navBackToReport">← Back to Report</a></li>
   </ul>
 </nav>
 
-<!-- ── PAGE HEADER ── -->
+<!-- PAGE HEADER -->
 <div class="page-header">
   <div class="header-eyebrow">Dispute Process</div>
   <h1 class="header-title">Challenge a<br><span>Report.</span></h1>
-  <p class="header-sub">
-    Every driver has the right to dispute a report they believe is inaccurate or false.
-    All disputes are reviewed by our team within 48 hours. This process exists to protect fairness.
-  </p>
+  <p class="header-sub">Every driver has the right to dispute a report they believe is inaccurate or false. All disputes are reviewed by our team within 48 hours.</p>
 </div>
 
-<!-- ── FAIRNESS BANNER ── -->
+<!-- FAIRNESS BANNER -->
 <div class="fairness-banner">
   <div class="fairness-icon">⚖️</div>
-  <p class="fairness-text">
-    <strong>PlateWatchNG is committed to fairness.</strong>
-    Reports that are successfully disputed are either amended or permanently removed.
-    Filing a dispute does not remove a report automatically — it triggers a human review.
-  </p>
+  <p class="fairness-text"><strong>PlateWatchNG is committed to fairness.</strong> Reports that are successfully disputed are either amended or permanently removed. Filing a dispute does not remove a report automatically — it triggers a human review.</p>
 </div>
 
-<!-- ── MAIN LAYOUT ── -->
-<div class="page-layout">
+<!-- LOADING STATE -->
+<div class="loading-state" id="loadingState">
+  <div class="spinner"></div>
+  <div class="loading-text">Loading report details...</div>
+</div>
 
-  <!-- ── FORM COLUMN ── -->
-  <div class="form-col">
+<!-- ERROR STATE (shown if report not found) -->
+<div class="error-state" id="errorState" style="display:none">
+  <h2>Report Not Found</h2>
+  <p>We couldn't find the report you're trying to dispute. It may have already been removed.</p>
+  <a href="index.html" class="back-btn">← Back to Home</a>
+</div>
 
-    <!-- Report being disputed -->
-    <div class="ref-card">
-      <div class="ref-card-header">
-        <span>Disputing Report On</span>
-        <span style="color:#555">Report #003</span>
-      </div>
-      <div class="ref-card-body">
-        <div class="ref-plate">LSD 482 BA</div>
-        <div class="ref-details">
-          <div class="ref-row">
-            <span class="ref-label">State</span>
-            <span class="ref-value">Lagos</span>
-          </div>
-          <div class="ref-row">
-            <span class="ref-label">Reported</span>
-            <span class="ref-value" style="font-family:'JetBrains Mono',monospace;font-size:11px">Today · 7:22 AM</span>
-          </div>
-          <div class="ref-row">
-            <span class="ref-label">Offense</span>
-            <span><span class="ref-tag">Road Rage</span><span class="ref-tag">Speeding</span></span>
-          </div>
-          <div class="ref-row">
-            <span class="ref-label">Location</span>
-            <span class="ref-value">Third Mainland Bridge, Lagos</span>
-          </div>
+<!-- MAIN CONTENT (hidden until loaded) -->
+<div id="mainContent" style="display:none">
+
+  <div class="page-layout">
+    <div class="form-col">
+
+      <!-- DYNAMIC REFERENCE CARD -->
+      <div class="ref-card">
+        <div class="ref-card-header">
+          <span>Disputing Report On</span>
+          <span style="color:#555" id="refReportNum">—</span>
         </div>
-      </div>
-    </div>
-
-    <form id="disputeForm" novalidate>
-
-      <!-- ══ SECTION 1: REASON ══ -->
-      <div class="form-section">
-        <div class="section-header-row">
-          <div class="section-num">1</div>
-          <div>
-            <div class="section-title-text">Reason for Dispute</div>
-            <div class="section-desc">Select the reason that best describes your dispute.</div>
-          </div>
-        </div>
-
-        <div class="reason-grid">
-          <div>
-            <input type="radio" class="reason-radio" name="reason" id="r1" value="not_my_vehicle" onchange="updateForm()">
-            <label class="reason-label" for="r1">
-              <span class="reason-icon">🚗</span>
-              <span class="reason-title">Not My Vehicle</span>
-              <span class="reason-sub">This plate does not belong to me or my vehicle was not present at this time and location.</span>
-            </label>
-          </div>
-          <div>
-            <input type="radio" class="reason-radio" name="reason" id="r2" value="false_description" onchange="updateForm()">
-            <label class="reason-label" for="r2">
-              <span class="reason-icon">📝</span>
-              <span class="reason-title">Inaccurate Description</span>
-              <span class="reason-sub">I was present but the description of events is false, exaggerated, or misleading.</span>
-            </label>
-          </div>
-          <div>
-            <input type="radio" class="reason-radio" name="reason" id="r3" value="wrong_plate" onchange="updateForm()">
-            <label class="reason-label" for="r3">
-              <span class="reason-icon">🔢</span>
-              <span class="reason-title">Wrong Plate Number</span>
-              <span class="reason-sub">The reporter mis-identified or entered the plate number incorrectly.</span>
-            </label>
-          </div>
-          <div>
-            <input type="radio" class="reason-radio" name="reason" id="r4" value="harassment" onchange="updateForm()">
-            <label class="reason-label" for="r4">
-              <span class="reason-icon">⚠️</span>
-              <span class="reason-title">Malicious / Harassment</span>
-              <span class="reason-sub">This report was filed with intent to harass, intimidate, or harm my reputation.</span>
-            </label>
+        <div class="ref-card-body">
+          <div class="ref-plate" id="refPlate">—</div>
+          <div class="ref-details">
+            <div class="ref-row">
+              <span class="ref-label">State</span>
+              <span class="ref-value" id="refState">—</span>
+            </div>
+            <div class="ref-row">
+              <span class="ref-label">Reported</span>
+              <span class="ref-value" style="font-family:'JetBrains Mono',monospace;font-size:11px" id="refDate">—</span>
+            </div>
+            <div class="ref-row">
+              <span class="ref-label">Offense</span>
+              <span id="refOffenses">—</span>
+            </div>
+            <div class="ref-row">
+              <span class="ref-label">Location</span>
+              <span class="ref-value" id="refLocation">—</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- ══ SECTION 2: RELATIONSHIP ══ -->
-      <div class="form-section">
-        <div class="section-header-row">
-          <div class="section-num">2</div>
-          <div>
-            <div class="section-title-text">Your Relationship to This Plate</div>
-            <div class="section-desc">Help us understand who you are in relation to this vehicle.</div>
+      <form id="disputeForm" novalidate>
+
+        <!-- SECTION 1: REASON -->
+        <div class="form-section">
+          <div class="section-header-row">
+            <div class="section-num">1</div>
+            <div><div class="section-title-text">Reason for Dispute</div><div class="section-desc">Select the reason that best describes your dispute.</div></div>
+          </div>
+          <div class="reason-grid">
+            <div>
+              <input type="radio" class="reason-radio" name="reason" id="r1" value="not_my_vehicle">
+              <label class="reason-label" for="r1"><span class="reason-icon">🚗</span><span class="reason-title">Not My Vehicle</span><span class="reason-sub">This plate does not belong to me or my vehicle was not present at this time and location.</span></label>
+            </div>
+            <div>
+              <input type="radio" class="reason-radio" name="reason" id="r2" value="false_description">
+              <label class="reason-label" for="r2"><span class="reason-icon">📝</span><span class="reason-title">Inaccurate Description</span><span class="reason-sub">I was present but the description of events is false, exaggerated, or misleading.</span></label>
+            </div>
+            <div>
+              <input type="radio" class="reason-radio" name="reason" id="r3" value="wrong_plate">
+              <label class="reason-label" for="r3"><span class="reason-icon">🔢</span><span class="reason-title">Wrong Plate Number</span><span class="reason-sub">The reporter mis-identified or entered the plate number incorrectly.</span></label>
+            </div>
+            <div>
+              <input type="radio" class="reason-radio" name="reason" id="r4" value="harassment">
+              <label class="reason-label" for="r4"><span class="reason-icon">⚠️</span><span class="reason-title">Malicious / Harassment</span><span class="reason-sub">This report was filed with intent to harass, intimidate, or harm my reputation.</span></label>
+            </div>
           </div>
         </div>
 
-        <div class="toggle-row">
-          <input type="radio" class="toggle-radio" name="relation" id="rel1" value="owner">
-          <label class="toggle-label" for="rel1">I am the vehicle owner</label>
-
-          <input type="radio" class="toggle-radio" name="relation" id="rel2" value="driver">
-          <label class="toggle-label" for="rel2">I was the driver</label>
-
-          <input type="radio" class="toggle-radio" name="relation" id="rel3" value="witness">
-          <label class="toggle-label" for="rel3">I witnessed the incident</label>
-
-          <input type="radio" class="toggle-radio" name="relation" id="rel4" value="other">
-          <label class="toggle-label" for="rel4">Other</label>
-        </div>
-      </div>
-
-      <!-- ══ SECTION 3: YOUR ACCOUNT ══ -->
-      <div class="form-section">
-        <div class="section-header-row">
-          <div class="section-num">3</div>
-          <div>
-            <div class="section-title-text">Your Statement</div>
-            <div class="section-desc">Describe in your own words what actually happened, or why this report is incorrect.</div>
+        <!-- SECTION 2: RELATIONSHIP -->
+        <div class="form-section">
+          <div class="section-header-row">
+            <div class="section-num">2</div>
+            <div><div class="section-title-text">Your Relationship to This Plate</div><div class="section-desc">Help us understand who you are in relation to this vehicle.</div></div>
+          </div>
+          <div class="toggle-row">
+            <input type="radio" class="toggle-radio" name="relation" id="rel1" value="owner"><label class="toggle-label" for="rel1">I am the vehicle owner</label>
+            <input type="radio" class="toggle-radio" name="relation" id="rel2" value="driver"><label class="toggle-label" for="rel2">I was the driver</label>
+            <input type="radio" class="toggle-radio" name="relation" id="rel3" value="witness"><label class="toggle-label" for="rel3">I witnessed the incident</label>
+            <input type="radio" class="toggle-radio" name="relation" id="rel4" value="other"><label class="toggle-label" for="rel4">Other</label>
           </div>
         </div>
 
-        <div class="field-row">
-          <div class="field-group">
-            <label class="field-label">Your Name <span class="required-star">*</span></label>
-            <input type="text" id="disputerName" placeholder="Full name" onkeyup="updateForm()"/>
+        <!-- SECTION 3: STATEMENT -->
+        <div class="form-section">
+          <div class="section-header-row">
+            <div class="section-num">3</div>
+            <div><div class="section-title-text">Your Statement</div><div class="section-desc">Describe in your own words what actually happened, or why this report is incorrect.</div></div>
+          </div>
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label">Your Name <span class="required-star">*</span></label>
+              <input type="text" id="disputerName" placeholder="Full name"/>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Phone Number <span class="optional-tag">optional</span></label>
+              <input type="text" id="disputerPhone" placeholder="e.g. 08012345678"/>
+              <div class="field-hint">Speeds up our review if we need to verify.</div>
+            </div>
           </div>
           <div class="field-group">
-            <label class="field-label">Phone Number <span class="optional-tag">optional</span></label>
-            <input type="text" placeholder="e.g. 08012345678"/>
-            <div class="field-hint">Speeds up our review process if we need to verify.</div>
+            <label class="field-label">Your Statement <span class="required-star">*</span></label>
+            <textarea id="disputeStatement" placeholder="Describe what actually happened, why the report is inaccurate, or provide any context that supports your dispute. Be as specific as possible." maxlength="1500" oninput="updateCharCount(this)"></textarea>
+            <div class="char-counter" id="charCounter" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#3a3a3a;text-align:right;margin-top:6px;letter-spacing:1px">0 / 1500</div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Where Were You? <span class="optional-tag">optional</span></label>
+            <input type="text" id="disputerLocation" placeholder="If you were not at the reported location, where were you at the time?"/>
           </div>
         </div>
 
-        <div class="field-group">
-          <label class="field-label">Your Statement <span class="required-star">*</span></label>
-          <textarea id="disputeStatement"
-            placeholder="Describe what actually happened, why the report is inaccurate, or provide any context that supports your dispute. Be as specific as possible — dates, times, locations, and any relevant details."
-            maxlength="1500" oninput="updateCharCount(this); updateForm()"></textarea>
-          <div class="char-counter" id="charCounter" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#3a3a3a;text-align:right;margin-top:6px;letter-spacing:1px">0 / 1500</div>
-        </div>
-
-        <div class="field-group">
-          <label class="field-label">Where Were You? <span class="optional-tag">optional</span></label>
-          <input type="text" placeholder="If you were not at the reported location, where were you at the time?"/>
-        </div>
-      </div>
-
-      <!-- ══ SECTION 4: EVIDENCE ══ -->
-      <div class="form-section">
-        <div class="section-header-row">
-          <div class="section-num">4</div>
-          <div>
-            <div class="section-title-text">Supporting Evidence</div>
-            <div class="section-desc">Optional but strongly recommended. Evidence significantly improves dispute outcomes.</div>
+        <!-- SECTION 4: EVIDENCE -->
+        <div class="form-section">
+          <div class="section-header-row">
+            <div class="section-num">4</div>
+            <div><div class="section-title-text">Supporting Evidence</div><div class="section-desc">Optional but strongly recommended. Evidence significantly improves dispute outcomes.</div></div>
           </div>
-        </div>
-
-        <div class="upload-zone" id="uploadZone">
-          <input type="file" id="fileInput" multiple accept="image/*,video/*,application/pdf"
-            onchange="handleFiles(this.files)"/>
-          <div class="upload-icon">📎</div>
-          <div class="upload-title">Attach supporting evidence</div>
-          <div class="upload-sub">Photos, dashcam footage, CCTV, receipts showing your location · Max 50MB per file</div>
-          <div class="upload-preview" id="uploadPreview"></div>
-        </div>
-        <div class="field-hint" style="margin-top:10px">
-          Examples: dashcam footage showing your actual driving, a receipt or geolocation proving you were elsewhere, vehicle registration documents, or CCTV stills.
-        </div>
-      </div>
-
-      <!-- ══ SECTION 5: CONTACT & SUBMIT ══ -->
-      <div class="form-section">
-        <div class="section-header-row">
-          <div class="section-num">5</div>
-          <div>
-            <div class="section-title-text">Contact & Submit</div>
-            <div class="section-desc">We will notify you of the outcome at this email address.</div>
+          <div class="upload-zone" id="uploadZone">
+            <input type="file" id="fileInput" multiple accept="image/*,video/*,application/pdf" onchange="handleFiles(this.files)"/>
+            <div class="upload-icon">📎</div>
+            <div class="upload-title">Attach supporting evidence</div>
+            <div class="upload-sub">Photos, dashcam footage, CCTV, receipts · Max 50MB per file</div>
+            <div class="upload-preview" id="uploadPreview"></div>
           </div>
+          <div class="field-hint" style="margin-top:10px">Examples: dashcam showing your actual driving, receipts proving your location, vehicle registration documents, or CCTV stills.</div>
         </div>
 
-        <div class="identity-note">
-          <div class="identity-note-icon">🔒</div>
-          <p>
-            Your name and contact information are used <strong>only for the review process</strong>.
-            They are never shown publicly on any page. Dispute submissions are handled confidentially.
-          </p>
-        </div>
-
-        <div class="field-group">
-          <label class="field-label">Email Address <span class="required-star">*</span></label>
-          <input type="email" id="disputerEmail" placeholder="your@email.com" onkeyup="updateForm()"/>
-          <div class="field-hint">You will receive a confirmation now, and the review outcome within 48 hours.</div>
-        </div>
-
-        <!-- Confirm -->
-        <div class="confirm-block" id="confirmBlock" onclick="toggleConfirm()">
-          <div class="confirm-checkbox">
-            <span class="confirm-check-icon">✓</span>
+        <!-- SECTION 5: CONTACT & SUBMIT -->
+        <div class="form-section">
+          <div class="section-header-row">
+            <div class="section-num">5</div>
+            <div><div class="section-title-text">Contact & Submit</div><div class="section-desc">We will notify you of the outcome at this email address.</div></div>
           </div>
-          <p class="confirm-text">
-            I confirm that the information provided in this dispute is <strong>truthful and accurate</strong>.
-            I understand that filing a false dispute may result in its rejection and could constitute a misuse of this platform.
-          </p>
+          <div class="identity-note">
+            <div class="identity-note-icon">🔒</div>
+            <p>Your name and contact information are used <strong>only for the review process</strong>. They are never shown publicly on any page.</p>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Email Address <span class="required-star">*</span></label>
+            <input type="email" id="disputerEmail" placeholder="your@email.com"/>
+            <div class="field-hint">You will receive a confirmation now, and the review outcome within 48 hours.</div>
+          </div>
+
+          <!-- Error box -->
+          <div class="error-box" id="errorBox"><p id="errorText"></p></div>
+
+          <div class="confirm-block" id="confirmBlock" onclick="toggleConfirm()">
+            <div class="confirm-checkbox"><span class="confirm-check-icon">✓</span></div>
+            <p class="confirm-text">I confirm that the information provided in this dispute is <strong>truthful and accurate</strong>. I understand that filing a false dispute may result in its rejection.</p>
+          </div>
+
+          <button type="button" class="submit-btn" id="submitBtn" onclick="handleSubmit()">
+            <span class="btn-text">Submit Dispute →</span>
+            <div class="btn-spinner"></div>
+          </button>
+          <div class="submit-note">Disputes are reviewed within 48 hours. The original report remains visible during review unless it clearly violates our content policy.</div>
         </div>
 
-        <button type="button" class="submit-btn" id="submitBtn" onclick="handleSubmit()">
-          Submit Dispute →
-        </button>
-        <div class="submit-note">
-          Disputes are reviewed within 48 hours. The original report remains visible during review unless it is found to be in clear violation of our content policy.
+      </form>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar-col">
+      <div class="sidebar-block">
+        <div class="sb-title">Review Process</div>
+        <div class="sb-body">
+          <div class="process-step"><div class="ps-num">1</div><div class="ps-text"><strong>Submit Dispute</strong>You fill this form and submit your case.</div></div>
+          <div class="process-step"><div class="ps-num">2</div><div class="ps-text"><strong>Confirmation Sent</strong>You receive an email confirming the dispute was received.</div></div>
+          <div class="process-step"><div class="ps-num">3</div><div class="ps-text"><strong>Human Review (48hrs)</strong>Our team reviews both sides — the original report and your dispute — plus any evidence from both parties.</div></div>
+          <div class="process-step"><div class="ps-num">4</div><div class="ps-text"><strong>Decision Issued</strong>The report is upheld, amended, or removed. Both parties are notified.</div></div>
         </div>
       </div>
-
-    </form>
-  </div><!-- /form-col -->
-
-  <!-- ── SIDEBAR ── -->
-  <div class="sidebar-col">
-
-    <!-- Review process -->
-    <div class="sidebar-block">
-      <div class="sb-title">Review Process</div>
-      <div class="sb-body">
-        <div class="process-step">
-          <div class="ps-num">1</div>
-          <div class="ps-text"><strong>Submit Dispute</strong>You fill this form and submit your case.</div>
+      <div class="sidebar-block">
+        <div class="sb-title">Possible Outcomes</div>
+        <div class="sb-body">
+          <div class="outcome-item"><span class="outcome-icon">✅</span><span><strong style="color:var(--white);display:block;margin-bottom:2px">Report Removed</strong>If the dispute is upheld — the report is permanently deleted.</span></div>
+          <div class="outcome-item"><span class="outcome-icon">✏️</span><span><strong style="color:var(--white);display:block;margin-bottom:2px">Report Amended</strong>If details were inaccurate but the incident occurred — the report may be corrected.</span></div>
+          <div class="outcome-item"><span class="outcome-icon">📌</span><span><strong style="color:var(--white);display:block;margin-bottom:2px">Report Upheld</strong>If evidence supports the original report — it remains as-is.</span></div>
+          <div class="outcome-item"><span class="outcome-icon">⚠️</span><span><strong style="color:var(--white);display:block;margin-bottom:2px">Disputed Label</strong>In unresolved cases, the report is labelled "Under Dispute" until resolved.</span></div>
         </div>
-        <div class="process-step">
-          <div class="ps-num">2</div>
-          <div class="ps-text"><strong>Confirmation Sent</strong>You receive an email confirming the dispute was received.</div>
+      </div>
+      <div class="sidebar-block">
+        <div class="sb-title">Important Notice</div>
+        <div class="sb-body">
+          <div class="warning-box"><p>Filing a <strong>false dispute</strong> to suppress a legitimate report is a misuse of this platform and may result in your dispute being permanently rejected.</p></div>
+          <p style="font-size:12px;color:var(--muted);line-height:1.65;margin-top:14px">If the report involves a serious criminal allegation such as a hit and run, we recommend also contacting the <strong style="color:var(--white)">Nigeria Police Force</strong> directly.</p>
         </div>
-        <div class="process-step">
-          <div class="ps-num">3</div>
-          <div class="ps-text"><strong>Human Review (48hrs)</strong>Our team reviews both sides — the original report and your dispute — plus any evidence from both parties.</div>
-        </div>
-        <div class="process-step">
-          <div class="ps-num">4</div>
-          <div class="ps-text"><strong>Decision Issued</strong>The report is upheld, amended, or removed. Both parties are notified.</div>
+      </div>
+      <div class="sidebar-block">
+        <div class="sb-title">Need Help?</div>
+        <div class="sb-body">
+          <div class="contact-item"><span class="contact-icon">📧</span><a href="mailto:disputes@platewatchng.com" class="contact-link">disputes@platewatchng.com</a></div>
+          <div class="contact-item"><span class="contact-icon">⏱️</span><span>Response time: within 48 hours</span></div>
+          <div class="contact-item"><span class="contact-icon">🌐</span><a href="#" class="contact-link">Help Centre →</a></div>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Possible outcomes -->
-    <div class="sidebar-block">
-      <div class="sb-title">Possible Outcomes</div>
-      <div class="sb-body">
-        <div class="outcome-item"><span class="outcome-icon">✅</span><span><strong style="color:var(--white);display:block;margin-bottom:2px">Report Removed</strong>If the dispute is upheld — the report is permanently deleted from the platform.</span></div>
-        <div class="outcome-item"><span class="outcome-icon">✏️</span><span><strong style="color:var(--white);display:block;margin-bottom:2px">Report Amended</strong>If details were inaccurate but the incident occurred — the report may be corrected.</span></div>
-        <div class="outcome-item"><span class="outcome-icon">📌</span><span><strong style="color:var(--white);display:block;margin-bottom:2px">Report Upheld</strong>If evidence supports the original report — it remains as-is. You are notified of the reasons.</span></div>
-        <div class="outcome-item"><span class="outcome-icon">⚠️</span><span><strong style="color:var(--white);display:block;margin-bottom:2px">Disputed Label</strong>In unresolved cases, the report is labelled "Under Dispute" until resolved.</span></div>
-      </div>
-    </div>
+</div><!-- /mainContent -->
 
-    <!-- Warning -->
-    <div class="sidebar-block">
-      <div class="sb-title">Important Notice</div>
-      <div class="sb-body">
-        <div class="warning-box">
-          <p>
-            Filing a <strong>false dispute</strong> to suppress a legitimate report is a misuse of this platform and may result in your dispute being permanently rejected.
-            Repeated abuse may result in restrictions on future submissions.
-          </p>
-        </div>
-        <p style="font-size:12px;color:var(--muted);line-height:1.65;margin-top:14px">
-          If the report involves a serious criminal allegation such as a hit and run, we recommend also contacting the <strong style="color:var(--white)">Nigeria Police Force</strong> directly.
-        </p>
-      </div>
-    </div>
-
-    <!-- Contact -->
-    <div class="sidebar-block">
-      <div class="sb-title">Need Help?</div>
-      <div class="sb-body">
-        <div class="contact-item"><span class="contact-icon">📧</span><a href="/cdn-cgi/l/email-protection#cfaba6bcbfbabbaabc8fbfa3aebbaab8aebbaca7a1a8e1aca0a2" class="contact-link"><span class="__cf_email__" data-cfemail="dcb8b5afaca9a8b9af9cacb0bda8b9abbda8bfb4b2bbf2bfb3b1">[email&#160;protected]</span></a></div>
-        <div class="contact-item"><span class="contact-icon">⏱️</span><span>Response time: within 48 hours</span></div>
-        <div class="contact-item"><span class="contact-icon">🌐</span><a href="#" class="contact-link">Help Centre →</a></div>
-      </div>
-    </div>
-
-  </div><!-- /sidebar-col -->
-
-</div><!-- /page-layout -->
-
-<!-- ── FOOTER ── -->
 <footer>
   <div class="footer-logo">PlateWatchNG</div>
   <ul class="footer-links">
-    <li><a href="#">Home</a></li>
-    <li><a href="#">Recent Reports</a></li>
-    <li><a href="#">File a Report</a></li>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="index.html#recent">Recent Reports</a></li>
+    <li><a href="platewatch-report-connected.html">File a Report</a></li>
     <li><a href="#">Privacy Policy</a></li>
     <li><a href="#">Terms of Use</a></li>
   </ul>
   <div class="footer-copy">© 2025 PlateWatchNG</div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // ── SUPABASE INIT ──
-  const SUPABASE_URL  = 'https://eptmdcecnukzicflasvj.supabase.co';
-  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwdG1kY2VjbnVremljZmxhc3ZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTA5MzEsImV4cCI6MjA5MTIyNjkzMX0.oqW_FsrVz4GGcdMroPgMM7KCbAp605QDP7xRQis-HTo';
-  const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  SUPABASE INIT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const SUPABASE_URL  = 'https://eptmdcecnukzicflasvj.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwdG1kY2VjbnVremljZmxhc3ZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTA5MzEsImV4cCI6MjA5MTIyNjkzMX0.oqW_FsrVz4GGcdMroPgMM7KCbAp605QDP7xRQis-HTo';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-  let confirmed = false;
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  STATE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let confirmed = false;
+let currentReportId = null;
+let currentPlate = null;
 
-  function updateCharCount(el){
-    const len = el.value.length;
-    const counter = document.getElementById('charCounter');
-    if(len === 0)     { counter.style.color='#3a3a3a'; counter.textContent=`0 / 1500`; }
-    else if(len < 50) { counter.style.color='var(--amber)'; counter.textContent=`${len} / 1500 — add more detail`; }
-    else              { counter.style.color='var(--green)'; counter.textContent=`${len} / 1500 ✓`; }
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  HELPERS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function parseTags(raw){
+  if(!raw)return[];
+  if(Array.isArray(raw))return raw;
+  try{return JSON.parse(raw);}catch{return raw.split(',').map(t=>t.trim());}
+}
+
+function formatDate(d){
+  if(!d)return'—';
+  return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'});
+}
+
+function updateCharCount(el){
+  const len=el.value.length;const c=document.getElementById('charCounter');
+  if(len===0){c.style.color='#3a3a3a';c.textContent='0 / 1500';}
+  else if(len<50){c.style.color='var(--amber)';c.textContent=`${len} / 1500 — add more detail`;}
+  else{c.style.color='var(--green)';c.textContent=`${len} / 1500 ✓`;}
+}
+
+function toggleConfirm(){
+  confirmed=!confirmed;
+  document.getElementById('confirmBlock').classList.toggle('checked',confirmed);
+}
+
+function showError(msg){
+  const box=document.getElementById('errorBox');
+  document.getElementById('errorText').textContent=msg;
+  box.style.display='block';
+  box.scrollIntoView({behavior:'smooth',block:'center'});
+}
+function hideError(){document.getElementById('errorBox').style.display='none';}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  LOAD REPORT FROM SUPABASE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+async function loadReport(){
+  const params = new URLSearchParams(window.location.search);
+  const reportId = params.get('report');
+  const plateFallback = params.get('plate');
+
+  // If no report ID passed, show error state
+  if(!reportId){
+    document.getElementById('loadingState').style.display='none';
+    if(plateFallback){
+      // Came from dispute button on profile page without specific report ID
+      // Show form anyway but without specific report reference
+      document.getElementById('refPlate').textContent = plateFallback;
+      document.getElementById('refReportNum').textContent = 'General Dispute';
+      document.getElementById('refState').textContent = '—';
+      document.getElementById('refDate').textContent = '—';
+      document.getElementById('refOffenses').textContent = '—';
+      document.getElementById('refLocation').textContent = '—';
+      currentPlate = plateFallback;
+      document.getElementById('mainContent').style.display='block';
+      document.title=`Dispute ${plateFallback} · PlateWatchNG`;
+      document.getElementById('navBackToReport').href=`platewatch-profile.html?plate=${encodeURIComponent(plateFallback)}`;
+      document.getElementById('backToProfile').href=`platewatch-profile.html?plate=${encodeURIComponent(plateFallback)}`;
+    } else {
+      document.getElementById('errorState').style.display='block';
+    }
+    return;
   }
 
-  function updateForm(){
-    // Nothing complex needed — just track typing for UX
+  // Fetch the specific report from Supabase
+  const{data,error}=await db.from('reports').select('*').eq('id',reportId).single();
+
+  document.getElementById('loadingState').style.display='none';
+
+  if(error||!data){
+    document.getElementById('errorState').style.display='block';
+    return;
   }
 
-  function toggleConfirm(){
-    confirmed = !confirmed;
-    document.getElementById('confirmBlock').classList.toggle('checked', confirmed);
-  }
+  // Store for submission
+  currentReportId = data.id;
+  currentPlate = data.plate_number;
 
-  function handleFiles(files){
-    const preview = document.getElementById('uploadPreview');
-    preview.innerHTML = '';
-    Array.from(files).forEach(file => {
-      if(file.type.startsWith('image/')){
-        const reader = new FileReader();
-        reader.onload = e => {
-          const img = document.createElement('img');
-          img.src = e.target.result;
-          img.className = 'preview-thumb';
-          preview.appendChild(img);
-        };
-        reader.readAsDataURL(file);
-      } else {
-        const div = document.createElement('div');
-        div.className = 'preview-file';
-        div.innerHTML = `📎 ${file.name}`;
-        preview.appendChild(div);
-      }
-    });
-  }
+  // Populate reference card with real data
+  const tags = parseTags(data.incident_types);
+  document.getElementById('refPlate').textContent = data.plate_number;
+  document.getElementById('refReportNum').textContent = `Report · ${formatDate(data.incident_date)}`;
+  document.getElementById('refState').textContent = data.plate_state||'—';
+  document.getElementById('refDate').textContent = formatDate(data.incident_date)+(data.incident_time?' · '+data.incident_time:'');
+  document.getElementById('refOffenses').innerHTML = tags.map(t=>`<span class="ref-tag">${t}</span>`).join('');
+  document.getElementById('refLocation').textContent = data.location||'—';
 
-  const zone = document.getElementById('uploadZone');
-  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-  zone.addEventListener('drop', e => {
-    e.preventDefault(); zone.classList.remove('drag-over');
-    handleFiles(e.dataTransfer.files);
+  // Update nav and page title
+  document.title=`Dispute ${data.plate_number} · PlateWatchNG`;
+  document.getElementById('navBackToReport').href=`platewatch-profile.html?plate=${encodeURIComponent(data.plate_number)}`;
+  document.getElementById('backToProfile').href=`platewatch-profile.html?plate=${encodeURIComponent(data.plate_number)}`;
+
+  document.getElementById('mainContent').style.display='block';
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  FILE UPLOAD PREVIEW
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function handleFiles(files){
+  const preview=document.getElementById('uploadPreview');preview.innerHTML='';
+  Array.from(files).forEach(file=>{
+    if(file.type.startsWith('image/')){
+      const r=new FileReader();
+      r.onload=e=>{const i=document.createElement('img');i.src=e.target.result;i.className='preview-thumb';preview.appendChild(i);};
+      r.readAsDataURL(file);
+    } else {
+      const d=document.createElement('div');d.className='preview-file';d.innerHTML=`📎 ${file.name}`;preview.appendChild(d);
+    }
   });
+}
+const zone=document.getElementById('uploadZone');
+zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});
+zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');handleFiles(e.dataTransfer.files);});
 
-  async function handleSubmit(){
-    const reason       = document.querySelector('input[name="reason"]:checked');
-    const relationship = document.querySelector('input[name="relation"]:checked');
-    const name         = document.getElementById('disputerName').value.trim();
-    const statement    = document.getElementById('disputeStatement').value.trim();
-    const email        = document.getElementById('disputerEmail').value.trim();
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  SUBMIT DISPUTE TO SUPABASE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+async function handleSubmit(){
+  hideError();
 
-    const urlParams  = new URLSearchParams(window.location.search);
-    const plateParam = urlParams.get('plate') || document.querySelector('.ref-plate')?.textContent.trim() || '';
+  const reason    = document.querySelector('input[name="reason"]:checked');
+  const relation  = document.querySelector('input[name="relation"]:checked');
+  const name      = document.getElementById('disputerName').value.trim();
+  const statement = document.getElementById('disputeStatement').value.trim();
+  const email     = document.getElementById('disputerEmail').value.trim();
+  const phone     = document.getElementById('disputerPhone').value.trim();
+  const location  = document.getElementById('disputerLocation').value.trim();
 
-    const errors = [];
-    if(!reason)               errors.push('Please select a reason for your dispute.');
-    if(!name)                 errors.push('Your name is required.');
-    if(statement.length < 30) errors.push('Please provide a more detailed statement (minimum 30 characters).');
-    if(!email.includes('@'))  errors.push('A valid email address is required.');
-    if(!confirmed)            errors.push('Please confirm that your dispute information is truthful.');
+  // Validate
+  const errors=[];
+  if(!reason)              errors.push('Please select a reason for your dispute.');
+  if(!name)                errors.push('Your name is required.');
+  if(statement.length<30)  errors.push('Please provide a more detailed statement (minimum 30 characters).');
+  if(!email.includes('@')) errors.push('A valid email address is required.');
+  if(!confirmed)           errors.push('Please confirm that your dispute information is truthful.');
 
-    if(errors.length){
-      alert(errors.join('\n'));
-      return;
+  if(errors.length){showError(errors.join(' · '));return;}
+
+  // Disable button
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=true;btn.classList.add('loading');
+
+  try {
+    // Build insert payload — report_id is required
+    const payload = {
+      plate_number:    currentPlate,
+      reason:          reason.value,
+      relationship:    relation ? relation.value : 'not_specified',
+      disputer_name:   name,
+      disputer_email:  email,
+      statement:       statement,
+      status:          'pending'
+    };
+
+    // Only include report_id if we have a real one
+    if(currentReportId){
+      payload.report_id = currentReportId;
     }
 
-    const btn = document.getElementById('submitBtn');
-    btn.disabled = true;
-    btn.textContent = 'Submitting...';
+    const{error}=await db.from('disputes').insert([payload]);
+    if(error) throw error;
 
-    try {
-      const { error } = await db.from('disputes').insert([{
-        plate_number:   plateParam,
-        reason:         reason.value,
-        relationship:   relationship ? relationship.value : null,
-        disputer_name:  name,
-        disputer_email: email,
-        statement:      statement,
-        status:         'pending'
-      }]);
+    // Success
+    document.getElementById('successOverlay').classList.add('visible');
 
-      if(error) throw error;
-
-      document.getElementById('successOverlay').classList.add('visible');
-
-    } catch(err) {
-      console.error('Dispute submit error:', err);
-      alert('Something went wrong: ' + err.message + '. Please try again.');
-      btn.disabled = false;
-      btn.textContent = 'Submit Dispute →';
-    }
+  } catch(err){
+    console.error('Dispute submit error:', err);
+    showError('Something went wrong submitting your dispute: '+err.message+'. Please try again.');
+    btn.disabled=false;
+    btn.classList.remove('loading');
   }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  INIT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+loadReport();
 </script>
 </body>
 </html>
