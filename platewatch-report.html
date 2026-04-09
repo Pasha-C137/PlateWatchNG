@@ -696,7 +696,7 @@ async function handleSubmit() {
     if (error) throw error;
 
   await db.functions.invoke('send-verification-email', {
-    body: { email, token, siteUrl: 'https://yoursite.vercel.app' }
+    body: { email, token, siteUrl: 'https://plate-watch-ng.vercel.app' }
   });
 
   document.getElementById('successOverlay').classList.add('visible');
