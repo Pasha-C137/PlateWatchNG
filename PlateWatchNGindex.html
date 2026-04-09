@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PlateWatch NG — Know Who's On The Road</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --black: #0d0d0d;
+    --white: #f4f1ec;
+    --red: #c0392b;
+    --red-dark: #962d22;
+    --red-glow: rgba(192, 57, 43, 0.15);
+    --grey: #1c1c1c;
+    --grey-mid: #2e2e2e;
+    --grey-light: #3d3d3d;
+    --muted: #777;
+    --border: rgba(255,255,255,0.07);
+    --amber: #e67e22;
+    --amber-glow: rgba(230,126,34,0.15);
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0; opacity: 0.4;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 48px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(13,13,13,0.88);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .nav-logo {
+    font-family: 'Bebas Neue', sans-serif; font-size: 22px;
+    letter-spacing: 3px; color: var(--white); text-decoration: none;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .nav-dot {
+    width: 8px; height: 8px; background: var(--red);
+    border-radius: 50%; animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50%      { opacity:.5; transform:scale(.7); }
+  }
+
+  .nav-links { display:flex; align-items:center; gap:32px; list-style:none; }
+  .nav-links a {
+    color: var(--muted); text-decoration:none; font-size:13px;
+    letter-spacing:1.5px; text-transform:uppercase; transition:color .2s;
+  }
+  .nav-links a:hover { color: var(--white); }
+
+  .nav-report-btn {
+    background: var(--red); color: var(--white) !important;
+    padding: 10px 20px; border-radius: 2px;
+    font-size:12px !important; letter-spacing:2px !important;
+    transition: background .2s !important;
+  }
+  .nav-report-btn:hover { background: var(--red-dark) !important; }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    padding: 120px 24px 80px; position:relative; z-index:1; text-align:center;
+  }
+
+  .hero::before {
+    content:''; position:absolute; inset:0;
+    background: radial-gradient(ellipse 600px 400px at 50% 40%, rgba(192,57,43,.08) 0%, transparent 70%);
+    pointer-events:none;
+  }
+
+  .hero-eyebrow {
+    font-family:'JetBrains Mono',monospace; font-size:11px;
+    letter-spacing:4px; text-transform:uppercase; color:var(--red);
+    margin-bottom:24px; opacity:0;
+    animation: fadeUp .8s ease forwards .2s;
+  }
+
+  .hero-headline {
+    font-family:'Bebas Neue',sans-serif;
+    font-size: clamp(64px,10vw,120px);
+    line-height:.92; letter-spacing:2px; color:var(--white);
+    margin-bottom:8px; opacity:0;
+    animation: fadeUp .8s ease forwards .4s;
+  }
+  .hero-headline .accent { color:var(--red); }
+
+  .hero-sub {
+    font-size: clamp(14px,2vw,17px); color:var(--muted);
+    font-weight:300; max-width:480px; line-height:1.7;
+    margin: 24px auto 48px; opacity:0;
+    animation: fadeUp .8s ease forwards .6s;
+  }
+
+  /* ── SEARCH ── */
+  .search-container {
+    width:100%; max-width:600px; opacity:0;
+    animation: fadeUp .8s ease forwards .8s;
+  }
+
+  .search-label {
+    font-family:'JetBrains Mono',monospace; font-size:10px;
+    letter-spacing:3px; text-transform:uppercase; color:var(--muted);
+    text-align:left; margin-bottom:10px; display:block;
+  }
+
+  .search-box {
+    display:flex; background:var(--grey);
+    border:1px solid var(--grey-light); border-radius:3px; overflow:hidden;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .search-box:focus-within {
+    border-color:var(--red);
+    box-shadow: 0 0 0 3px var(--red-glow);
+  }
+
+  .search-plate {
+    flex:1; background:transparent; border:none; outline:none;
+    padding:18px 20px;
+    font-family:'JetBrains Mono',monospace; font-size:18px;
+    font-weight:600; color:var(--white); letter-spacing:3px; text-transform:uppercase;
+  }
+  .search-plate::placeholder { color:#444; font-weight:400; letter-spacing:2px; }
+
+  .search-divider { width:1px; background:var(--grey-light); margin:14px 0; }
+
+  .search-state {
+    background:transparent; border:none; outline:none;
+    padding:18px 16px; color:var(--muted);
+    font-family:'DM Sans',sans-serif; font-size:13px;
+    cursor:pointer; min-width:130px;
+    appearance:none; -webkit-appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 12px center; padding-right:30px;
+  }
+  .search-state option { background:var(--grey); color:var(--white); }
+
+  .search-btn {
+    background:var(--red); border:none; padding:0 28px;
+    color:var(--white); font-family:'Bebas Neue',sans-serif;
+    font-size:18px; letter-spacing:2px; cursor:pointer;
+    transition:background .2s; white-space:nowrap;
+  }
+  .search-btn:hover { background:var(--red-dark); }
+  .search-btn:active { transform:scale(.98); }
+
+  .search-hint {
+    font-family:'JetBrains Mono',monospace; font-size:10px;
+    color:#444; text-align:left; margin-top:10px; letter-spacing:1px;
+  }
+
+  /* ── RESULT PANEL ── */
+  .result-panel {
+    width:100%; max-width:600px; margin-top:20px;
+    display:none; opacity:0; transform:translateY(10px);
+    transition: opacity .3s, transform .3s;
+  }
+  .result-panel.visible { display:block; opacity:1; transform:translateY(0); }
+
+  .result-loading {
+    display:flex; align-items:center; gap:12px;
+    padding:20px 24px; background:var(--grey);
+    border:1px solid var(--grey-light); border-radius:3px;
+  }
+  .spinner {
+    width:18px; height:18px; border:2px solid var(--grey-light);
+    border-top-color:var(--red); border-radius:50%;
+    animation:spin .7s linear infinite; flex-shrink:0;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  .result-clean {
+    background:rgba(39,174,96,.08); border:1px solid rgba(39,174,96,.25);
+    border-radius:3px; padding:20px 24px;
+    display:flex; align-items:center; gap:16px;
+  }
+
+  .result-icon {
+    width:36px; height:36px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:16px; flex-shrink:0;
+  }
+  .result-icon.green { background:rgba(39,174,96,.2); }
+  .result-icon.red   { background:rgba(192,57,43,.2); }
+
+  .result-text h4 { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600; letter-spacing:1px; margin-bottom:4px; }
+  .result-text h4.green { color:#2ecc71; }
+  .result-text h4.red   { color:#e74c3c; }
+  .result-text p { font-size:12px; color:var(--muted); line-height:1.5; }
+
+  .result-flagged {
+    background:rgba(192,57,43,.08); border:1px solid rgba(192,57,43,.25);
+    border-radius:3px; padding:20px 24px;
+  }
+  .result-flagged-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+  .plate-display { font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:600; letter-spacing:4px; color:var(--white); }
+
+  .badge { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; padding:4px 10px; border-radius:2px; font-family:'JetBrains Mono',monospace; }
+  .badge.state    { background:var(--grey-mid); color:var(--muted); }
+  .badge.risk-high{ background:rgba(192,57,43,.3); color:#e74c3c; }
+  .badge.risk-med { background:rgba(230,126,34,.2); color:var(--amber); }
+  .badge.risk-low { background:rgba(39,174,96,.2); color:#2ecc71; }
+
+  .report-mini { background:rgba(255,255,255,.03); border:1px solid var(--border); border-radius:2px; padding:12px 14px; margin-bottom:8px; }
+  .report-mini-tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+  .report-tag { font-size:9px; letter-spacing:1px; text-transform:uppercase; padding:3px 8px; border-radius:20px; background:rgba(192,57,43,.2); color:#e74c3c; font-family:'JetBrains Mono',monospace; }
+  .report-mini-meta { font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+
+  .view-full-btn {
+    display:block; text-align:center; margin-top:12px; padding:10px;
+    border:1px solid var(--grey-light); border-radius:2px;
+    color:var(--muted); font-size:11px; letter-spacing:2px; text-transform:uppercase;
+    text-decoration:none; font-family:'JetBrains Mono',monospace;
+    cursor:pointer; transition:border-color .2s, color .2s;
+  }
+  .view-full-btn:hover { border-color:var(--red); color:var(--red); }
+
+  /* ── STATS STRIP ── */
+  .stats-strip {
+    position:relative; z-index:1; display:flex; justify-content:center;
+    border-top:1px solid var(--border); border-bottom:1px solid var(--border);
+    margin-top:80px;
+  }
+
+  .stat-item {
+    flex:1; max-width:240px; padding:40px 32px; text-align:center;
+    border-right:1px solid var(--border);
+    opacity:0; animation: fadeUp .6s ease forwards;
+  }
+  .stat-item:last-child { border-right:none; }
+  .stat-item:nth-child(1){ animation-delay:1.0s; }
+  .stat-item:nth-child(2){ animation-delay:1.15s; }
+  .stat-item:nth-child(3){ animation-delay:1.3s; }
+
+  .stat-num { font-family:'Bebas Neue',sans-serif; font-size:52px; color:var(--white); line-height:1; margin-bottom:8px; letter-spacing:1px; }
+  .stat-num span { color:var(--red); }
+  .stat-label { font-size:11px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; font-family:'JetBrains Mono',monospace; }
+
+  /* ── TICKER ── */
+  .ticker-wrap {
+    overflow:hidden; border-top:1px solid var(--border); border-bottom:1px solid var(--border);
+    background:rgba(192,57,43,.04); padding:10px 0;
+    position:relative; z-index:1;
+  }
+
+  .ticker-track {
+    display:flex; gap:48px; white-space:nowrap;
+    animation: ticker 28s linear infinite;
+  }
+  .ticker-track:hover { animation-play-state: paused; }
+
+  @keyframes ticker {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+
+  .ticker-item {
+    display:inline-flex; align-items:center; gap:10px;
+    font-family:'JetBrains Mono',monospace; font-size:11px;
+    color:var(--muted); letter-spacing:1px; flex-shrink:0;
+    cursor:pointer; transition:color .2s;
+  }
+  .ticker-item:hover { color:var(--white); }
+
+  .ticker-plate {
+    font-weight:600; color:var(--white);
+    background:var(--grey-mid); padding:2px 8px; border-radius:2px;
+  }
+
+  /* ── RECENT REPORTS ── */
+  .recent-section {
+    position:relative; z-index:1;
+    padding: 100px 48px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section-header {
+    display:flex; align-items:flex-end; justify-content:space-between;
+    margin-bottom: 40px; gap: 20px;
+  }
+
+  .section-label {
+    font-family:'JetBrains Mono',monospace; font-size:10px;
+    letter-spacing:4px; color:var(--red); text-transform:uppercase; margin-bottom:12px;
+  }
+
+  .section-title {
+    font-family:'Bebas Neue',sans-serif;
+    font-size: clamp(36px,5vw,56px);
+    letter-spacing:2px; color:var(--white); line-height:1;
+  }
+
+  .section-desc {
+    font-size:13px; color:var(--muted); max-width:380px; line-height:1.7; margin-top:10px;
+  }
+
+  .filter-tabs {
+    display:flex; gap:8px; flex-wrap:wrap; align-self:flex-start;
+  }
+
+  .filter-tab {
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:2px;
+    text-transform:uppercase; padding:8px 16px; border-radius:2px; cursor:pointer;
+    border:1px solid var(--grey-light); color:var(--muted); background:transparent;
+    transition: all .2s;
+  }
+  .filter-tab:hover { border-color:var(--muted); color:var(--white); }
+  .filter-tab.active { background:var(--red); border-color:var(--red); color:var(--white); }
+
+  .live-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:'JetBrains Mono',monospace; font-size:10px;
+    letter-spacing:2px; text-transform:uppercase; color:#e74c3c;
+    margin-bottom:8px;
+  }
+  .live-dot {
+    width:6px; height:6px; background:#e74c3c; border-radius:50%;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  /* ── REPORT CARDS ── */
+  .cards-grid {
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap:1px;
+    background:var(--border);
+    border:1px solid var(--border);
+    border-radius:3px;
+    overflow:hidden;
+  }
+
+  .report-card {
+    background:var(--black); padding:28px 24px;
+    transition: background .2s;
+    cursor:pointer; position:relative; overflow:hidden;
+  }
+
+  .report-card::before {
+    content:''; position:absolute; top:0; left:0; bottom:0; width:3px;
+    background:transparent; transition:background .2s;
+  }
+  .report-card:hover { background:rgba(255,255,255,.02); }
+  .report-card:hover::before { background:var(--red); }
+
+  .report-card.sev-high::before  { background:var(--red); }
+  .report-card.sev-medium::before { background:var(--amber); }
+  .report-card.sev-low::before   { background:#27ae60; }
+
+  .card-top {
+    display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:16px;
+  }
+
+  .card-plate {
+    font-family:'JetBrains Mono',monospace; font-size:17px; font-weight:600;
+    letter-spacing:3px; color:var(--white);
+  }
+
+  .card-state-badge {
+    font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:1.5px;
+    text-transform:uppercase; color:var(--muted);
+    background:var(--grey-mid); padding:3px 8px; border-radius:2px;
+  }
+
+  .card-tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+
+  .card-tag {
+    font-size:9px; letter-spacing:1px; text-transform:uppercase;
+    padding:3px 9px; border-radius:20px;
+    font-family:'JetBrains Mono',monospace;
+  }
+  .card-tag.rage    { background:rgba(192,57,43,.2); color:#e74c3c; }
+  .card-tag.speed   { background:rgba(230,126,34,.15); color:var(--amber); }
+  .card-tag.oneway  { background:rgba(231,76,60,.15); color:#e74c3c; }
+  .card-tag.drunk   { background:rgba(155,89,182,.2); color:#9b59b6; }
+  .card-tag.hitrun  { background:rgba(192,57,43,.3); color:#e74c3c; }
+  .card-tag.signal  { background:rgba(230,126,34,.12); color:var(--amber); }
+  .card-tag.other   { background:rgba(255,255,255,.06); color:var(--muted); }
+
+  .card-location {
+    font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace;
+    letter-spacing:.5px; margin-bottom:10px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+
+  .card-desc {
+    font-size:12px; color:#555; line-height:1.6;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    margin-bottom:14px;
+  }
+
+  .card-bottom {
+    display:flex; align-items:center; justify-content:space-between;
+    border-top:1px solid var(--border); padding-top:12px; margin-top:4px;
+  }
+
+  .card-time { font-size:10px; color:#444; font-family:'JetBrains Mono',monospace; letter-spacing:1px; }
+
+  .card-view {
+    font-size:10px; letter-spacing:1.5px; text-transform:uppercase;
+    color:var(--muted); font-family:'JetBrains Mono',monospace;
+    text-decoration:none; transition:color .2s;
+  }
+  .card-view:hover { color:var(--red); }
+
+  .empty-state {
+    padding:60px 24px; text-align:center; color:var(--muted);
+    font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:2px; width:100%;
+  }
+
+  /* ── LOAD MORE ── */
+  .load-more-wrap { text-align:center; margin-top:32px; }
+  .load-more-btn {
+    display:inline-flex; align-items:center; gap:10px;
+    background:transparent; border:1px solid var(--grey-light);
+    color:var(--muted); padding:14px 32px; border-radius:2px; cursor:pointer;
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2px; text-transform:uppercase;
+    transition:all .2s;
+  }
+  .load-more-btn:hover { border-color:var(--red); color:var(--red); }
+
+  /* ── DETERRENT NOTICE ── */
+  .deterrent-notice {
+    position:relative; z-index:1;
+    margin: 0 48px;
+    padding: 24px 32px;
+    background: rgba(192,57,43,.06);
+    border: 1px solid rgba(192,57,43,.2);
+    border-radius:3px;
+    display:flex; align-items:center; gap:20px;
+  }
+
+  .deterrent-icon { font-size:24px; flex-shrink:0; }
+
+  .deterrent-text h4 {
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2px;
+    text-transform:uppercase; color:var(--red); margin-bottom:6px;
+  }
+  .deterrent-text p { font-size:12px; color:var(--muted); line-height:1.6; }
+
+  /* ── HOW IT WORKS ── */
+  .how-section {
+    position:relative; z-index:1;
+    padding:100px 48px; max-width:1100px; margin:0 auto;
+  }
+
+  .steps-grid {
+    display:grid; grid-template-columns:repeat(3,1fr);
+    gap:1px; background:var(--border);
+    border:1px solid var(--border);
+  }
+
+  .step {
+    background:var(--black); padding:40px 32px; position:relative;
+  }
+
+  .step-num {
+    font-family:'Bebas Neue',sans-serif; font-size:72px;
+    color:rgba(255,255,255,.04); position:absolute;
+    top:16px; right:24px; line-height:1; pointer-events:none;
+  }
+
+  .step-icon {
+    width:40px; height:40px; background:var(--red-glow);
+    border:1px solid rgba(192,57,43,.3); border-radius:2px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:18px; margin-bottom:20px;
+  }
+
+  .step h3 { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:1px; color:var(--white); margin-bottom:10px; }
+  .step p   { font-size:13px; color:var(--muted); line-height:1.8; }
+
+  /* ── CTA ── */
+  .cta-section {
+    position:relative; z-index:1;
+    margin:0 48px 100px; padding:60px 64px;
+    background:var(--grey); border:1px solid var(--grey-light); border-radius:3px;
+    display:flex; align-items:center; justify-content:space-between; gap:40px; overflow:hidden;
+  }
+  .cta-section::before {
+    content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--red);
+  }
+
+  .cta-text h2 { font-family:'Bebas Neue',sans-serif; font-size:40px; letter-spacing:2px; color:var(--white); margin-bottom:10px; }
+  .cta-text p  { font-size:14px; color:var(--muted); max-width:440px; line-height:1.7; }
+
+  .cta-btn {
+    background:var(--red); color:var(--white); border:none;
+    padding:18px 36px; font-family:'Bebas Neue',sans-serif;
+    font-size:20px; letter-spacing:2px; cursor:pointer; border-radius:2px;
+    white-space:nowrap; transition:background .2s, transform .1s;
+    text-decoration:none; display:inline-block;
+  }
+  .cta-btn:hover { background:var(--red-dark); }
+  .cta-btn:active { transform:scale(.98); }
+
+  /* ── FOOTER ── */
+  footer {
+    position:relative; z-index:1;
+    border-top:1px solid var(--border);
+    padding:36px 48px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+
+  .footer-logo { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:3px; color:var(--muted); }
+  .footer-links { display:flex; gap:28px; list-style:none; }
+  .footer-links a { font-size:11px; color:#555; text-decoration:none; letter-spacing:1.5px; text-transform:uppercase; transition:color .2s; }
+  .footer-links a:hover { color:var(--muted); }
+  .footer-copy { font-size:11px; color:#444; font-family:'JetBrains Mono',monospace; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(20px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  .fade-in-card {
+    opacity:0; transform:translateY(16px);
+    animation: fadeUp .5s ease forwards;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width:768px) {
+    nav { padding:16px 20px; }
+    .nav-links li:not(:last-child) { display:none; }
+    .hero { padding:100px 20px 60px; }
+    .search-box { flex-wrap:wrap; }
+    .search-state { min-width:100%; border-top:1px solid var(--grey-light); }
+    .search-btn { width:100%; padding:16px; }
+    .stats-strip { flex-direction:column; }
+    .stat-item { border-right:none; border-bottom:1px solid var(--border); max-width:100%; }
+    .recent-section { padding:60px 20px; }
+    .section-header { flex-direction:column; align-items:flex-start; }
+    .cards-grid { grid-template-columns:1fr; }
+    .how-section { padding:60px 20px; }
+    .steps-grid { grid-template-columns:1fr; }
+    .cta-section { margin:0 20px 60px; padding:40px 28px; flex-direction:column; }
+    .deterrent-notice { margin:0 20px; }
+    footer { flex-direction:column; gap:20px; padding:28px 20px; text-align:center; }
+    .footer-links { flex-wrap:wrap; justify-content:center; gap:16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <a href="index.html" class="nav-logo">
+    <div class="nav-dot"></div>
+    PlateWatch<span style="color:var(--red)">NG</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#recent">Recent Reports</a></li>
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="platewatch-report.html" class="nav-report-btn">Report a Driver</a></li>
+  </ul>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-eyebrow">Nigeria's Road Accountability Platform</div>
+  <h1 class="hero-headline">
+    Know Who's<br>On The <span class="accent">Road.</span>
+  </h1>
+  <p class="hero-sub">
+    Search any Nigerian plate number. See reports filed by other drivers.
+    Dangerous plates are posted publicly — because accountability changes behaviour.
+  </p>
+
+  <div class="search-container">
+    <span class="search-label">Search by plate number</span>
+    <div class="search-box">
+      <input class="search-plate" type="text" placeholder="ABC 123 XY"
+        maxlength="12" id="plateInput" autocomplete="off" spellcheck="false"/>
+      <div class="search-divider"></div>
+      <select class="search-state" id="stateSelect">
+        <option value="">All States</option>
+        <option>Abia</option><option>Adamawa</option><option>Akwa Ibom</option>
+        <option>Anambra</option><option>Bauchi</option><option>Bayelsa</option>
+        <option>Benue</option><option>Borno</option><option>Cross River</option>
+        <option>Delta</option><option>Ebonyi</option><option>Edo</option>
+        <option>Ekiti</option><option>Enugu</option><option>FCT — Abuja</option>
+        <option>Gombe</option><option>Imo</option><option>Jigawa</option>
+        <option>Kaduna</option><option>Kano</option><option>Katsina</option>
+        <option>Kebbi</option><option>Kogi</option><option>Kwara</option>
+        <option selected>Lagos</option><option>Nasarawa</option><option>Niger</option>
+        <option>Ogun</option><option>Ondo</option><option>Osun</option>
+        <option>Oyo</option><option>Plateau</option><option>Rivers</option>
+        <option>Sokoto</option><option>Taraba</option><option>Yobe</option><option>Zamfara</option>
+      </select>
+      <button class="search-btn" onclick="handleSearch()">SEARCH</button>
+    </div>
+    <div class="search-hint">e.g. &nbsp;KJA 234 BC &nbsp;·&nbsp; Select state for faster results</div>
+  </div>
+
+  <div class="result-panel" id="resultPanel"></div>
+</section>
+
+<!-- ── STATS ── -->
+<div class="stats-strip">
+  <div class="stat-item">
+    <div class="stat-num" id="statReports">0</div>
+    <div class="stat-label">Reports Filed</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num" id="statPlates">0</div>
+    <div class="stat-label">Plates Flagged</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">36<span>+</span></div>
+    <div class="stat-label">States Covered</div>
+  </div>
+</div>
+
+<!-- ── TICKER ── -->
+<div class="ticker-wrap" title="Hover to pause">
+  <div class="ticker-track" id="tickerTrack"></div>
+</div>
+
+<!-- ── RECENT REPORTS ── -->
+<section class="recent-section" id="recent">
+  <div class="section-header">
+    <div>
+      <div class="live-badge"><div class="live-dot"></div> Live Feed</div>
+      <div class="section-label">Recent Reports</div>
+      <h2 class="section-title">Latest Flagged<br>Plates</h2>
+      <p class="section-desc">
+        Verified reports from Nigerian drivers. Every plate shown here has been email-confirmed.
+        Plates with disputed reports are marked accordingly.
+      </p>
+    </div>
+    <div class="filter-tabs" id="filterTabs">
+      <button class="filter-tab active" data-filter="all">All</button>
+      <button class="filter-tab" data-filter="Road Rage">Road Rage</button>
+      <button class="filter-tab" data-filter="Excessive Speeding">Speeding</button>
+      <button class="filter-tab" data-filter="One-Way Driving">One-Way</button>
+      <button class="filter-tab" data-filter="Hit and Run">Hit & Run</button>
+      <button class="filter-tab" data-filter="Drunk / Impaired">Drunk</button>
+    </div>
+  </div>
+
+  <div class="cards-grid" id="cardsGrid">
+    <div class="empty-state">Loading reports...</div>
+  </div>
+
+  <div class="load-more-wrap">
+    <button class="load-more-btn" id="loadMoreBtn" onclick="loadMore()" style="display:none">
+      <span>↓</span> Load More Reports
+    </button>
+  </div>
+</section>
+
+<!-- ── DETERRENT NOTICE ── -->
+<div class="deterrent-notice">
+  <div class="deterrent-icon">⚠️</div>
+  <div class="deterrent-text">
+    <h4>Why We Publish Recent Reports</h4>
+    <p>
+      Public visibility is a proven deterrent. Knowing your plate can appear here
+      encourages more careful driving. All reports require email verification before going live,
+      and any driver can dispute a report they believe is false.
+    </p>
+  </div>
+</div>
+
+<!-- ── HOW IT WORKS ── -->
+<section class="how-section" id="how">
+  <div class="section-label">How It Works</div>
+  <h2 class="section-title" style="margin-bottom:60px">Simple. Verified. Accountable.</h2>
+  <div class="steps-grid">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-icon">🔍</div>
+      <h3>Search a Plate</h3>
+      <p>Enter any Nigerian plate. See a full history of community-filed reports instantly.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-icon">📋</div>
+      <h3>File a Report</h3>
+      <p>Witnessed reckless driving or road rage? File a report with details and optional evidence.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-icon">✉️</div>
+      <h3>Email Verified</h3>
+      <p>Every report requires email confirmation before going live. False reports can be disputed.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ── -->
+<div class="cta-section">
+  <div class="cta-text">
+    <h2>Witnessed Dangerous Driving?</h2>
+    <p>Your report could protect the next driver on that road. Takes less than 2 minutes. Your identity is never made public.</p>
+  </div>
+  <a href="platewatch-report.html" class="cta-btn">+ File a Report</a>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-logo">PlateWatchNG</div>
+  <ul class="footer-links">
+    <li><a href="#recent">Recent Reports</a></li>
+    <li><a href="platewatch-report.html">File a Report</a></li>
+    <li><a href="platewatch-dispute.html">Dispute a Report</a></li>
+    <li><a href="#">Privacy Policy</a></li>
+    <li><a href="#">Terms of Use</a></li>
+  </ul>
+  <div class="footer-copy">© 2025 PlateWatchNG</div>
+</footer>
+
+<script>
+// ── SUPABASE INIT ──
+const SUPABASE_URL  = 'https://eptmdcecnukzicflasvj.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwdG1kY2VjbnVremljZmxhc3ZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTA5MzEsImV4cCI6MjA5MTIyNjkzMX0.oqW_FsrVz4GGcdMroPgMM7KCbAp605QDP7xRQis-HTo';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ── HELPERS ──
+function tagClass(tag) {
+  const map = {
+    'Road Rage':'rage','Speeding':'speed','Excessive Speeding':'speed',
+    'Reckless Driving':'speed','One-Way Driving':'oneway',
+    'Drunk / Impaired':'drunk','Drunk Driving':'drunk',
+    'Hit and Run':'hitrun','Hit & Run':'hitrun',
+    'Ignoring Signals':'signal','Harassment / Threats':'rage'
+  };
+  return map[tag] || 'other';
+}
+
+function parseTags(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  try { return JSON.parse(raw); } catch { return raw.split(',').map(t => t.trim()); }
+}
+
+function timeAgo(d) {
+  const diff = Date.now() - new Date(d).getTime();
+  const m=Math.floor(diff/60000), h=Math.floor(diff/3600000), dy=Math.floor(diff/86400000);
+  if(m<60) return `${m}m ago`;
+  if(h<24) return `${h}h ago`;
+  if(dy<30) return `${dy}d ago`;
+  return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'});
+}
+
+function calcRisk(reports) {
+  if(!reports.length) return {label:'None',score:0,cls:''};
+  const s={high:3,medium:2,low:1};
+  const raw=reports.reduce((a,r)=>a+(s[r.severity]||1),0);
+  const score=Math.min(Math.round((raw/(reports.length*3))*100),100);
+  if(score>=66) return {label:'High Risk',score,cls:'risk-high'};
+  if(score>=33) return {label:'Moderate',score,cls:'risk-med'};
+  return {label:'Low Risk',score,cls:'risk-low'};
+}
+
+function animateCount(el, target) {
+  if(!target){el.textContent='0';return;}
+  let s=0; const step=target/(1600/16);
+  const t=setInterval(()=>{s+=step;if(s>=target){s=target;clearInterval(t);}el.textContent=Math.floor(s).toLocaleString();},16);
+}
+
+// ── STATS ──
+async function loadStats() {
+  const {count:total} = await db.from('reports').select('*',{count:'exact',head:true}).eq('verified',true);
+  const {data:plates} = await db.from('reports').select('plate_number').eq('verified',true);
+  const unique = plates ? new Set(plates.map(r=>r.plate_number)).size : 0;
+  animateCount(document.getElementById('statReports'), total||0);
+  animateCount(document.getElementById('statPlates'), unique||0);
+}
+
+// ── RECENT REPORTS ──
+let allReports = [];
+let activeFilter = 'all';
+let visibleCount = 6;
+
+async function loadRecentReports() {
+  const {data,error} = await db.from('reports').select('*').eq('verified',true).order('created_at',{ascending:false}).limit(50);
+  if(error){console.error(error);document.getElementById('cardsGrid').innerHTML='<div class="empty-state">Could not load reports.</div>';return;}
+  allReports = data || [];
+  renderCards(true);
+  buildTicker();
+  document.getElementById('loadMoreBtn').style.display = allReports.length > 6 ? 'inline-flex' : 'none';
+}
+
+function filtered() {
+  if(activeFilter==='all') return allReports;
+  return allReports.filter(r=>parseTags(r.incident_types).some(t=>t===activeFilter));
+}
+
+function renderCards(animate=false) {
+  const grid = document.getElementById('cardsGrid');
+  const data = filtered().slice(0, visibleCount);
+  if(!data.length){grid.innerHTML='<div class="empty-state">NO REPORTS YET · BE THE FIRST TO FILE ONE</div>';return;}
+  grid.innerHTML = data.map((r,i)=>{
+    const tags = parseTags(r.incident_types);
+    return `<div class="report-card sev-${r.severity||'low'} ${animate?'fade-in-card':''}"
+      style="${animate?`animation-delay:${i*.07}s`:''}"
+      onclick="window.location='platewatch-profile.html?plate=${encodeURIComponent(r.plate_number)}'">
+      <div class="card-top">
+        <div class="card-plate">${r.plate_number}</div>
+        <div class="card-state-badge">${r.plate_state||''}</div>
+      </div>
+      <div class="card-tags">${tags.map(t=>`<span class="card-tag ${tagClass(t)}">${t}</span>`).join('')}</div>
+      <div class="card-location">📍 ${r.location||''}</div>
+      <div class="card-desc">${r.description||''}</div>
+      <div class="card-bottom">
+        <div class="card-time">${timeAgo(r.created_at)}</div>
+        <a class="card-view" href="platewatch-profile.html?plate=${encodeURIComponent(r.plate_number)}">View →</a>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function loadMore() {
+  visibleCount = Math.min(visibleCount+6, filtered().length);
+  renderCards();
+  if(visibleCount >= filtered().length) document.getElementById('loadMoreBtn').style.display='none';
+}
+
+document.getElementById('filterTabs').addEventListener('click', e => {
+  const btn = e.target.closest('.filter-tab');
+  if(!btn) return;
+  document.querySelectorAll('.filter-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  activeFilter = btn.dataset.filter;
+  visibleCount = 6;
+  renderCards(true);
+  document.getElementById('loadMoreBtn').style.display = filtered().length > 6 ? 'inline-flex' : 'none';
+});
+
+// ── TICKER ──
+function buildTicker() {
+  if(!allReports.length){document.querySelector('.ticker-wrap').style.display='none';return;}
+  const items = allReports.slice(0,20).map(r=>{
+    const tags = parseTags(r.incident_types);
+    return `<span class="ticker-item" onclick="window.location='platewatch-profile.html?plate=${encodeURIComponent(r.plate_number)}'">
+      <span class="ticker-plate">${r.plate_number}</span>
+      <span>${tags[0]||'Reported'}</span>
+      <span style="color:#444">·</span>
+      <span>${r.plate_state||''}</span>
+      <span style="color:#2a2a2a;margin-left:8px">|</span>
+    </span>`;
+  }).join('');
+  document.getElementById('tickerTrack').innerHTML = items + items;
+}
+
+// ── SEARCH ──
+document.getElementById('plateInput').addEventListener('input', function(){
+  this.value = this.value.toUpperCase().replace(/[^A-Z0-9\s]/g,'');
+});
+document.getElementById('plateInput').addEventListener('keydown', e => { if(e.key==='Enter') handleSearch(); });
+
+async function handleSearch() {
+  const plate = document.getElementById('plateInput').value.trim();
+  if(!plate) return;
+  const panel = document.getElementById('resultPanel');
+  panel.classList.remove('visible');
+  panel.style.display = 'block';
+  panel.innerHTML = `<div class="result-loading"><div class="spinner"></div><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);letter-spacing:1px">Searching database...</span></div>`;
+  requestAnimationFrame(()=>panel.classList.add('visible'));
+
+  await db.from('plate_searches').insert([{plate_number: plate.toUpperCase()}]);
+
+  const {data,error} = await db.from('reports').select('*').eq('plate_number',plate.toUpperCase()).eq('verified',true).order('created_at',{ascending:false});
+
+  if(error){panel.innerHTML=`<div class="result-clean"><div class="result-icon red">⚠️</div><div class="result-text"><h4 class="red">Search error</h4><p>Could not reach the database. Please try again.</p></div></div>`;return;}
+
+  if(!data||!data.length){
+    panel.innerHTML=`<div class="result-clean"><div class="result-icon green">✓</div><div class="result-text"><h4 class="green">No reports found for ${plate}</h4><p>This plate has a clean record on PlateWatchNG. Nigerian roads are safer with you on them.</p></div></div>`;
+    return;
+  }
+
+  const risk = calcRisk(data);
+  const mini = data.slice(0,2).map(r=>`
+    <div class="report-mini">
+      <div class="report-mini-tags">${parseTags(r.incident_types).map(t=>`<span class="report-tag">${t}</span>`).join('')}</div>
+      <div class="report-mini-meta">📍 ${r.location} · ${new Date(r.incident_date).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'})}</div>
+    </div>`).join('');
+
+  panel.innerHTML=`
+    <div class="result-flagged">
+      <div class="result-flagged-header">
+        <div class="result-icon red">⚠️</div>
+        <div class="plate-display">${plate}</div>
+        <span class="badge state">${data[0].plate_state||''}</span>
+        <span class="badge ${risk.cls}">${risk.label}</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:14px;font-family:'JetBrains Mono',monospace;letter-spacing:1px">${data.length} REPORT${data.length>1?'S':''} FILED</div>
+      ${mini}
+      <a class="view-full-btn" href="platewatch-profile.html?plate=${encodeURIComponent(plate)}">View Full Report History →</a>
+      <div style="font-size:10px;color:#555;margin-top:12px;font-family:'JetBrains Mono',monospace">Reports are user-submitted · <a href="platewatch-dispute.html" style="color:#666;text-decoration:underline">Dispute a report</a></div>
+    </div>`;
+}
+
+// ── INIT ──
+const statsObs = new IntersectionObserver(entries=>{
+  if(entries[0].isIntersecting){loadStats();statsObs.disconnect();}
+},{threshold:.3});
+statsObs.observe(document.querySelector('.stats-strip'));
+loadRecentReports();
+</script>
+</body>
+</html>
