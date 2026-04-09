@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plate Profile · PlateWatchNG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--black:#0d0d0d;--white:#f4f1ec;--red:#c0392b;--red-dark:#962d22;--red-glow:rgba(192,57,43,.15);--grey:#1c1c1c;--grey-mid:#2e2e2e;--grey-light:#3d3d3d;--muted:#777;--border:rgba(255,255,255,.07);--amber:#e67e22;--green:#27ae60}
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--black);color:var(--white);font-family:'DM Sans',sans-serif;font-weight:300;overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:20px 48px;border-bottom:1px solid var(--border);background:rgba(13,13,13,.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+  .nav-logo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--white);text-decoration:none;display:flex;align-items:center;gap:10px}
+  .nav-dot{width:8px;height:8px;background:var(--red);border-radius:50%;animation:pulse 2s ease-in-out infinite}
+  .nav-links{display:flex;align-items:center;gap:32px;list-style:none}
+  .nav-links a{color:var(--muted);text-decoration:none;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s}
+  .nav-links a:hover{color:var(--white)}
+  .nav-report-btn{background:var(--red);color:var(--white)!important;padding:10px 20px;border-radius:2px;font-size:12px!important;letter-spacing:2px!important;transition:background .2s!important}
+  .nav-report-btn:hover{background:var(--red-dark)!important}
+  .breadcrumb{position:relative;z-index:1;padding:100px 48px 0;display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#444;opacity:0;animation:fadeUp .5s ease forwards .1s}
+  .breadcrumb a{color:#444;text-decoration:none;transition:color .2s}
+  .breadcrumb a:hover{color:var(--muted)}
+  .breadcrumb-sep{color:#2a2a2a}
+  .breadcrumb-current{color:var(--muted)}
+  .loading-state{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:120px 48px;gap:16px}
+  .spinner{width:32px;height:32px;border:2px solid var(--grey-light);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite}
+  .loading-text{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted)}
+  .profile-header{position:relative;z-index:1;padding:32px 48px 48px;border-bottom:1px solid var(--border)}
+  .profile-header::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 800px 300px at 30% 50%,rgba(192,57,43,.06) 0%,transparent 70%);pointer-events:none}
+  .header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap;opacity:0;animation:fadeUp .6s ease forwards .2s}
+  .plate-block{display:flex;flex-direction:column;gap:14px}
+  .plate-visual{display:inline-flex;flex-direction:column;border:3px solid var(--white);border-radius:6px;overflow:hidden;width:fit-content;box-shadow:0 0 0 1px rgba(255,255,255,.1),0 8px 32px rgba(0,0,0,.6)}
+  .plate-top-bar{background:var(--green);padding:3px 16px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:3px;color:#fff;text-transform:uppercase}
+  .plate-number{background:#f5f0e0;color:#111;font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:6px;padding:8px 24px;text-align:center;line-height:1}
+  .plate-state-bar{background:#1a3a6e;padding:3px 16px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:2px;color:#fff}
+  .plate-meta{display:flex;flex-direction:column;gap:10px;padding-top:4px}
+  .meta-badges{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .badge{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:5px 12px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-weight:600}
+  .badge.state{background:var(--grey-mid);color:var(--muted)}
+  .badge.risk-high{background:rgba(192,57,43,.25);color:#e74c3c;border:1px solid rgba(192,57,43,.4)}
+  .badge.risk-med{background:rgba(230,126,34,.2);color:var(--amber);border:1px solid rgba(230,126,34,.3)}
+  .badge.risk-low{background:rgba(39,174,96,.2);color:#2ecc71;border:1px solid rgba(39,174,96,.3)}
+  .badge.verified{background:rgba(39,174,96,.1);color:#27ae60;border:1px solid rgba(39,174,96,.2);font-size:9px}
+  .plate-summary{font-size:13px;color:var(--muted);line-height:1.6;max-width:480px}
+  .profile-stats{display:flex;gap:0;border:1px solid var(--border);border-radius:3px;overflow:hidden;margin-top:28px;width:fit-content;opacity:0;animation:fadeUp .6s ease forwards .35s}
+  .pstat{padding:16px 28px;border-right:1px solid var(--border);text-align:center}
+  .pstat:last-child{border-right:none}
+  .pstat-num{font-family:'Bebas Neue',sans-serif;font-size:32px;line-height:1;margin-bottom:4px;color:var(--white)}
+  .pstat-num.red{color:#e74c3c}
+  .pstat-num.amber{color:var(--amber)}
+  .pstat-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+  .header-actions{display:flex;flex-direction:column;gap:10px;align-items:flex-end;opacity:0;animation:fadeUp .6s ease forwards .3s}
+  .action-btn{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:2px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;transition:all .2s;white-space:nowrap;border:1px solid transparent}
+  .action-btn.primary{background:var(--red);color:var(--white);border-color:var(--red)}
+  .action-btn.primary:hover{background:var(--red-dark);border-color:var(--red-dark)}
+  .action-btn.ghost{background:transparent;color:var(--muted);border-color:var(--grey-light)}
+  .action-btn.ghost:hover{border-color:var(--muted);color:var(--white)}
+  .action-btn.dispute{background:transparent;color:#e74c3c;border-color:rgba(192,57,43,.35)}
+  .action-btn.dispute:hover{background:rgba(192,57,43,.08)}
+  .profile-body{position:relative;z-index:1;display:grid;grid-template-columns:1fr 320px;gap:0;max-width:1200px;margin:0 auto;border-bottom:1px solid var(--border)}
+  .reports-col{border-right:1px solid var(--border);padding:40px 48px}
+  .col-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;opacity:0;animation:fadeUp .5s ease forwards .4s}
+  .col-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:var(--white)}
+  .sort-select{background:var(--grey);border:1px solid var(--grey-light);color:var(--muted);padding:7px 12px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+  .sort-select option{background:var(--grey)}
+  .report-card{border:1px solid var(--border);border-radius:3px;margin-bottom:16px;overflow:hidden;opacity:0;animation:fadeUp .5s ease forwards;transition:border-color .2s}
+  .report-card:hover{border-color:var(--grey-light)}
+  .rc-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+  .rc-num{font-family:'JetBrains Mono',monospace;font-size:10px;color:#444;letter-spacing:2px}
+  .rc-meta{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;display:flex;align-items:center;gap:12px}
+  .rc-verified{display:inline-flex;align-items:center;gap:5px;font-size:9px;color:var(--green);letter-spacing:1px}
+  .rc-body{padding:20px}
+  .rc-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+  .rc-tag{font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:20px;font-family:'JetBrains Mono',monospace;font-weight:600}
+  .rc-tag.rage{background:rgba(192,57,43,.2);color:#e74c3c}
+  .rc-tag.speed{background:rgba(230,126,34,.15);color:var(--amber)}
+  .rc-tag.oneway{background:rgba(192,57,43,.15);color:#e74c3c}
+  .rc-tag.drunk{background:rgba(155,89,182,.2);color:#9b59b6}
+  .rc-tag.hitrun{background:rgba(192,57,43,.3);color:#e74c3c}
+  .rc-tag.signal{background:rgba(230,126,34,.12);color:var(--amber)}
+  .rc-tag.other{background:rgba(255,255,255,.06);color:var(--muted)}
+  .rc-location{display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:12px}
+  .rc-desc{font-size:13px;color:#aaa;line-height:1.75;margin-bottom:16px}
+  .rc-footer{border-top:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between}
+  .flag-btn{display:inline-flex;align-items:center;gap:6px;background:transparent;border:none;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#444;transition:color .2s;padding:0}
+  .flag-btn:hover{color:#e74c3c}
+  .helpful-row{display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#444;letter-spacing:1px}
+  .helpful-btn{background:transparent;border:1px solid #2a2a2a;border-radius:2px;padding:4px 10px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:10px;color:#444;transition:all .2s;letter-spacing:1px}
+  .helpful-btn:hover{border-color:var(--grey-light);color:var(--muted)}
+  .helpful-btn.active{border-color:var(--green);color:var(--green)}
+  .sidebar-col{padding:40px 32px}
+  .sidebar-card{border:1px solid var(--border);border-radius:3px;margin-bottom:20px;opacity:0;animation:fadeUp .5s ease forwards .5s}
+  .sidebar-card-title{padding:12px 16px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);background:rgba(255,255,255,.02)}
+  .sidebar-card-body{padding:16px}
+  .sinfo-row{display:flex;align-items:flex-start;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}
+  .sinfo-row:last-child{border-bottom:none}
+  .sinfo-label{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase}
+  .sinfo-value{color:var(--white);text-align:right;font-size:12px}
+  .offense-item{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+  .offense-item:last-child{border-bottom:none}
+  .offense-bar-wrap{flex:1;margin:0 12px;height:3px;background:#1e1e1e;border-radius:2px;overflow:hidden}
+  .offense-bar{height:100%;border-radius:2px;background:var(--red)}
+  .offense-label{font-size:11px;color:var(--muted);white-space:nowrap}
+  .offense-count{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--white)}
+  .risk-meter{margin:16px 0 8px;border:1px solid var(--border);border-radius:3px;overflow:hidden}
+  .risk-track{height:8px;background:#1a1a1a}
+  .risk-fill{height:100%;background:linear-gradient(to right,var(--green),var(--amber),var(--red));transition:width .8s ease}
+  .risk-labels{display:flex;justify-content:space-between;padding:6px 4px 0;font-family:'JetBrains Mono',monospace;font-size:9px;color:#444;letter-spacing:1px}
+  .timeline-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+  .timeline-item:last-child{border-bottom:none}
+  .timeline-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+  .timeline-dot.red{background:var(--red)}
+  .timeline-dot.amber{background:var(--amber)}
+  .timeline-dot.green{background:var(--green)}
+  .timeline-info{flex:1}
+  .timeline-tag{font-size:11px;color:var(--white);margin-bottom:3px}
+  .timeline-time{font-family:'JetBrains Mono',monospace;font-size:10px;color:#444;letter-spacing:1px}
+  .dispute-box{border:1px solid rgba(192,57,43,.25);border-radius:3px;padding:20px;background:rgba(192,57,43,.05);opacity:0;animation:fadeUp .5s ease forwards .6s}
+  .dispute-box h4{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#e74c3c;margin-bottom:8px}
+  .dispute-box p{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px}
+  .dispute-cta{display:block;text-align:center;padding:11px;background:transparent;border:1px solid rgba(192,57,43,.35);border-radius:2px;color:#e74c3c;text-decoration:none;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;transition:all .2s}
+  .dispute-cta:hover{background:rgba(192,57,43,.1)}
+  .disclaimer{position:relative;z-index:1;padding:20px 48px;border-top:1px solid var(--border);display:flex;align-items:flex-start;gap:14px}
+  .disclaimer-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+  .disclaimer p{font-size:11px;color:#444;line-height:1.7;font-family:'JetBrains Mono',monospace;letter-spacing:.5px}
+  .disclaimer a{color:#555;text-decoration:underline}
+  footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:36px 48px;display:flex;align-items:center;justify-content:space-between}
+  .footer-logo{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--muted)}
+  .footer-links{display:flex;gap:28px;list-style:none}
+  .footer-links a{font-size:11px;color:#555;text-decoration:none;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s}
+  .footer-links a:hover{color:var(--muted)}
+  .footer-copy{font-size:11px;color:#444;font-family:'JetBrains Mono',monospace}
+  @media(max-width:900px){.profile-body{grid-template-columns:1fr}.reports-col{border-right:none;border-bottom:1px solid var(--border);padding:32px 20px}.sidebar-col{padding:32px 20px}nav{padding:16px 20px}.nav-links li:not(:last-child){display:none}.profile-header{padding:28px 20px 36px}.breadcrumb{padding:100px 20px 0}.disclaimer{padding:20px}footer{flex-direction:column;gap:20px;padding:28px 20px;text-align:center}.footer-links{flex-wrap:wrap;justify-content:center}}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo"><div class="nav-dot"></div>PlateWatch<span style="color:var(--red)">NG</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html#recent">Recent Reports</a></li>
+    <li><a href="index.html#how">How It Works</a></li>
+    <li><a href="platewatch-report.html" class="nav-report-btn">Report a Driver</a></li>
+  </ul>
+</nav>
+
+<div class="breadcrumb">
+  <a href="index.html">Home</a>
+  <span class="breadcrumb-sep">›</span>
+  <a href="index.html">Search</a>
+  <span class="breadcrumb-sep">›</span>
+  <span class="breadcrumb-current" id="breadcrumbPlate">Loading...</span>
+</div>
+
+<div class="loading-state" id="loadingState">
+  <div class="spinner"></div>
+  <div class="loading-text">Searching database...</div>
+</div>
+
+<div id="profileContent" style="display:none">
+  <div class="profile-header">
+    <div class="header-top">
+      <div class="plate-block">
+        <div class="plate-visual">
+          <div class="plate-top-bar">🇳🇬 &nbsp; Nigeria</div>
+          <div class="plate-number" id="plateDisplay">—</div>
+          <div class="plate-state-bar" id="plateStateDisplay">—</div>
+        </div>
+        <div class="plate-meta">
+          <div class="meta-badges">
+            <span class="badge" id="riskBadge">—</span>
+            <span class="badge state" id="stateBadge">—</span>
+            <span class="badge verified">✓ Reports Verified</span>
+          </div>
+          <p class="plate-summary" id="plateSummary"></p>
+        </div>
+        <div class="profile-stats">
+          <div class="pstat"><div class="pstat-num red" id="statReports">0</div><div class="pstat-label">Reports</div></div>
+          <div class="pstat"><div class="pstat-num amber" id="statOffenses">0</div><div class="pstat-label">Offense Types</div></div>
+          <div class="pstat"><div class="pstat-num" id="statLastReport">—</div><div class="pstat-label">Last Report</div></div>
+          <div class="pstat"><div class="pstat-num">0</div><div class="pstat-label">Disputes</div></div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="platewatch-report.html" class="action-btn primary">+ File New Report</a>
+        <button class="action-btn ghost" onclick="sharePage()">↗ Share This Page</button>
+        <a href="#" class="action-btn dispute" id="disputeHeaderLink">⚑ &nbsp;Is This Your Plate? Dispute</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="profile-body">
+    <div class="reports-col">
+      <div class="col-header">
+        <h2 class="col-title">Report History</h2>
+        <select class="sort-select" id="sortSelect" onchange="sortReports()">
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="severity">Severity</option>
+        </select>
+      </div>
+      <div id="reportsContainer"></div>
+    </div>
+    <div class="sidebar-col">
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Vehicle Information</div>
+        <div class="sidebar-card-body" id="vehicleInfo"></div>
+      </div>
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Risk Level</div>
+        <div class="sidebar-card-body">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px" id="riskLabel">—</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600" id="riskScore">—</span>
+          </div>
+          <div class="risk-meter"><div class="risk-track"><div class="risk-fill" id="riskFill" style="width:0%"></div></div></div>
+          <div class="risk-labels"><span>LOW</span><span>MODERATE</span><span>HIGH</span></div>
+          <p style="font-size:11px;color:var(--muted);line-height:1.6;margin-top:12px">Score based on number of reports, offense severity, and recency.</p>
+        </div>
+      </div>
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Offense Breakdown</div>
+        <div class="sidebar-card-body" id="offenseBreakdown"></div>
+      </div>
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Report Timeline</div>
+        <div class="sidebar-card-body" id="timelineContainer"></div>
+      </div>
+      <div class="dispute-box">
+        <h4>Is This Your Plate?</h4>
+        <p>If you believe any report on this page is false or inaccurate, you have the right to file a formal dispute. All disputes are reviewed within 48 hours.</p>
+        <a href="#" class="dispute-cta" id="disputeBoxLink">⚑ &nbsp;File a Dispute</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="disclaimer">
+  <div class="disclaimer-icon">ℹ️</div>
+  <p>All reports are user-submitted and verified by email confirmation only. PlateWatchNG is not a law enforcement authority and does not independently verify report descriptions. This platform is for community awareness only.
+  <a href="#">Terms of Use</a> · <a href="#">Privacy Policy</a> · <a href="platewatch-dispute.html">Dispute Process</a></p>
+</div>
+
+<footer>
+  <div class="footer-logo">PlateWatchNG</div>
+  <ul class="footer-links">
+    <li><a href="index.html#recent">Recent Reports</a></li>
+    <li><a href="platewatch-report.html">File a Report</a></li>
+    <li><a href="platewatch-dispute.html">Dispute a Report</a></li>
+    <li><a href="#">Privacy Policy</a></li>
+    <li><a href="#">Terms of Use</a></li>
+  </ul>
+  <div class="footer-copy">© 2025 PlateWatchNG</div>
+</footer>
+
+<script>
+const SUPABASE_URL  = 'https://eptmdcecnukzicflasvj.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwdG1kY2VjbnVremljZmxhc3ZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTA5MzEsImV4cCI6MjA5MTIyNjkzMX0.oqW_FsrVz4GGcdMroPgMM7KCbAp605QDP7xRQis-HTo';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let allReports = [];
+
+function parseTags(raw){if(!raw)return[];if(Array.isArray(raw))return raw;try{return JSON.parse(raw);}catch{return raw.split(',').map(t=>t.trim());}}
+function tagClass(t){const m={'Road Rage':'rage','Speeding':'speed','Excessive Speeding':'speed','Reckless Driving':'speed','One-Way Driving':'oneway','Drunk / Impaired':'drunk','Drunk Driving':'drunk','Hit and Run':'hitrun','Hit & Run':'hitrun','Ignoring Signals':'signal','Harassment / Threats':'rage'};return m[t]||'other';}
+function timeAgo(d){const diff=Date.now()-new Date(d).getTime();const m=Math.floor(diff/60000),h=Math.floor(diff/3600000),dy=Math.floor(diff/86400000);if(m<60)return m+'m ago';if(h<24)return h+'h ago';if(dy<30)return dy+'d ago';return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'});}
+function formatDate(d){if(!d)return'—';return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'});}
+function calcRisk(reports){if(!reports.length)return{label:'None',score:0,cls:'',color:'var(--muted)'};const s={high:3,medium:2,low:1};const raw=reports.reduce((a,r)=>a+(s[r.severity]||1),0);const score=Math.min(Math.round((raw/(reports.length*3))*100),100);if(score>=66)return{label:'HIGH RISK',score,cls:'risk-high',color:'#e74c3c'};if(score>=33)return{label:'MODERATE',score,cls:'risk-med',color:'var(--amber)'};return{label:'LOW RISK',score,cls:'risk-low',color:'#2ecc71'};}
+
+function renderReports(reports){
+  const c=document.getElementById('reportsContainer');
+  if(!reports.length){c.innerHTML='<div style="padding:40px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:#444;letter-spacing:2px">NO VERIFIED REPORTS YET</div>';return;}
+  c.innerHTML=reports.map((r,i)=>{
+    const tags=parseTags(r.incident_types);
+    const dateStr=formatDate(r.incident_date)+(r.incident_time?' · '+r.incident_time:'');
+    const disputeUrl='platewatch-dispute.html?plate='+encodeURIComponent(r.plate_number)+'&report='+r.id;
+    return `<div class="report-card" style="animation-delay:${.45+i*.1}s">
+      <div class="rc-header">
+        <span class="rc-num">REPORT #${String(reports.length-i).padStart(3,'0')}</span>
+        <div class="rc-meta"><span class="rc-verified">✓ Verified</span><span>${dateStr}</span></div>
+      </div>
+      <div class="rc-body">
+        <div class="rc-tags">${tags.map(t=>`<span class="rc-tag ${tagClass(t)}">${t}</span>`).join('')}</div>
+        <div class="rc-location"><span>📍</span><span>${r.location||'—'}</span></div>
+        <p class="rc-desc">${r.description||''}</p>
+      </div>
+      <div class="rc-footer">
+        <button class="flag-btn" onclick="window.location.href='${disputeUrl}'">⚑ &nbsp;Report as Inaccurate</button>
+        <div class="helpful-row"><span>Helpful?</span>
+          <button class="helpful-btn" onclick="this.classList.toggle('active')">👍</button>
+          <button class="helpful-btn" onclick="this.classList.toggle('active')">👎</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function sortReports(){
+  const val=document.getElementById('sortSelect').value;
+  let sorted=[...allReports];
+  if(val==='oldest')sorted.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  else if(val==='severity'){const s={high:3,medium:2,low:1};sorted.sort((a,b)=>(s[b.severity]||1)-(s[a.severity]||1));}
+  else sorted.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  renderReports(sorted);
+}
+
+function renderSidebar(reports,plate){
+  const first=reports[0]||{};
+  document.getElementById('vehicleInfo').innerHTML=`
+    <div class="sinfo-row"><span class="sinfo-label">Plate</span><span class="sinfo-value" style="font-family:'JetBrains Mono',monospace;font-weight:600">${plate}</span></div>
+    <div class="sinfo-row"><span class="sinfo-label">State</span><span class="sinfo-value">${first.plate_state||'—'}</span></div>
+    <div class="sinfo-row"><span class="sinfo-label">Type</span><span class="sinfo-value">${first.vehicle_type||'Not specified'}</span></div>
+    <div class="sinfo-row"><span class="sinfo-label">Color</span><span class="sinfo-value">${first.vehicle_color||'Not specified'}</span></div>
+    <div class="sinfo-row"><span class="sinfo-label">Make/Model</span><span class="sinfo-value">${first.vehicle_make||'Not specified'}</span></div>
+    <div class="sinfo-row"><span class="sinfo-label">First Reported</span><span class="sinfo-value" style="font-family:'JetBrains Mono',monospace;font-size:11px">${formatDate(reports[reports.length-1]?.created_at)}</span></div>`;
+
+  const risk=calcRisk(reports);
+  document.getElementById('riskLabel').textContent=risk.label;
+  document.getElementById('riskLabel').style.color=risk.color;
+  document.getElementById('riskScore').innerHTML=risk.score+'<span style="font-size:12px;color:var(--muted)">/100</span>';
+  document.getElementById('riskScore').style.color=risk.color;
+  setTimeout(()=>{document.getElementById('riskFill').style.width=risk.score+'%';},300);
+
+  const allTags=reports.flatMap(r=>parseTags(r.incident_types));
+  const tagCounts={};allTags.forEach(t=>{tagCounts[t]=(tagCounts[t]||0)+1;});
+  const maxC=Math.max(...Object.values(tagCounts));
+  document.getElementById('offenseBreakdown').innerHTML=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).map(([tag,count])=>`
+    <div class="offense-item">
+      <span class="offense-label">${tag}</span>
+      <div class="offense-bar-wrap"><div class="offense-bar" style="width:${Math.round((count/maxC)*100)}%"></div></div>
+      <span class="offense-count">${count}</span>
+    </div>`).join('');
+
+  document.getElementById('timelineContainer').innerHTML=reports.slice(0,5).map(r=>{
+    const t=parseTags(r.incident_types);
+    const dc=r.severity==='high'?'red':r.severity==='medium'?'amber':'green';
+    return `<div class="timeline-item">
+      <div class="timeline-dot ${dc}"></div>
+      <div class="timeline-info">
+        <div class="timeline-tag">${t.join(' + ')||'Reported'}</div>
+        <div class="timeline-time">${formatDate(r.incident_date)} · ${r.location||''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function sharePage(){
+  if(navigator.share){navigator.share({title:'PlateWatchNG — '+document.getElementById('plateDisplay').textContent,url:window.location.href});}
+  else{navigator.clipboard.writeText(window.location.href).then(()=>alert('Link copied!'));}
+}
+
+async function loadProfile(){
+  const params=new URLSearchParams(window.location.search);
+  const plate=(params.get('plate')||'').toUpperCase().trim();
+  if(!plate){window.location.href='index.html';return;}
+
+  document.title=`${plate} · PlateWatchNG`;
+  document.getElementById('breadcrumbPlate').textContent=plate;
+  document.getElementById('plateDisplay').textContent=plate;
+
+  // set dispute links with actual plate number
+  const disputeUrl='platewatch-dispute.html?plate='+encodeURIComponent(plate);
+  document.getElementById('disputeHeaderLink').href=disputeUrl;
+  document.getElementById('disputeBoxLink').href=disputeUrl;
+
+  const{data,error}=await db.from('reports').select('*')
+    .eq('plate_number',plate).eq('verified',true)
+    .order('created_at',{ascending:false});
+
+  document.getElementById('loadingState').style.display='none';
+
+  if(error||!data||!data.length){
+    // show clean state inline — no redirect to missing page
+    document.getElementById('loadingState').innerHTML=`
+      <div style="text-align:center;padding:40px 24px">
+        <div style="font-size:64px;margin-bottom:20px">✓</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:56px;color:var(--green);letter-spacing:2px;margin-bottom:12px">Clean Record</div>
+        <p style="font-size:15px;color:var(--muted);max-width:400px;margin:0 auto 28px;line-height:1.75">No verified reports found for <strong style="color:var(--white)">${plate}</strong>. This plate has a clean record on PlateWatchNG.</p>
+        <a href="index.html" style="display:inline-block;background:var(--red);color:var(--white);padding:14px 28px;border-radius:2px;text-decoration:none;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase">← Back to Search</a>
+      </div>`;
+    document.getElementById('loadingState').style.display='flex';
+    return;
+  }
+
+  allReports=data;
+  const risk=calcRisk(data);
+  const uniqueTags=[...new Set(data.flatMap(r=>parseTags(r.incident_types)))];
+
+  document.getElementById('plateStateDisplay').textContent=(data[0].plate_state||'Nigeria')+' State';
+  document.getElementById('stateBadge').textContent=data[0].plate_state||'NG';
+  document.getElementById('riskBadge').className=`badge ${risk.cls}`;
+  document.getElementById('riskBadge').textContent=`⚠ ${risk.label}`;
+  document.getElementById('plateSummary').innerHTML=`This plate has <strong style="color:var(--white)">${data.length} verified report${data.length>1?'s':''}</strong> filed by community members. Most recent was <strong style="color:var(--white)">${timeAgo(data[0].created_at)}</strong>.`;
+  document.getElementById('statReports').textContent=data.length;
+  document.getElementById('statOffenses').textContent=uniqueTags.length;
+  document.getElementById('statLastReport').textContent=timeAgo(data[0].created_at);
+
+  renderReports(data);
+  renderSidebar(data,plate);
+  document.getElementById('profileContent').style.display='block';
+}
+
+loadProfile();
+</script>
+</body>
+</html>

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clean Record · PlateWatchNG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--black:#0d0d0d;--white:#f4f1ec;--red:#c0392b;--red-dark:#962d22;--green:#27ae60;--green-glow:rgba(39,174,96,.12);--green-dim:rgba(39,174,96,.06);--grey:#1c1c1c;--grey-mid:#2e2e2e;--grey-light:#3d3d3d;--muted:#777;--border:rgba(255,255,255,.07);--border-green:rgba(39,174,96,.2)}
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--black);color:var(--white);font-family:'DM Sans',sans-serif;font-weight:300;overflow-x:hidden;min-height:100vh}
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
+  @keyframes checkDraw{from{stroke-dashoffset:120}to{stroke-dashoffset:0}}
+  @keyframes ringExpand{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.08);opacity:1}100%{transform:scale(1);opacity:1}}
+  @keyframes ringPulseOut{0%{transform:scale(1);opacity:.4}100%{transform:scale(1.6);opacity:0}}
+  @keyframes scanLine{0%{top:0%;opacity:.6}100%{top:100%;opacity:0}}
+  @keyframes glowPulse{0%,100%{box-shadow:0 0 40px rgba(39,174,96,.12),0 0 80px rgba(39,174,96,.04)}50%{box-shadow:0 0 60px rgba(39,174,96,.22),0 0 120px rgba(39,174,96,.08)}}
+  nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:20px 48px;border-bottom:1px solid var(--border);background:rgba(13,13,13,.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+  .nav-logo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--white);text-decoration:none;display:flex;align-items:center;gap:10px}
+  .nav-dot{width:8px;height:8px;background:var(--red);border-radius:50%;animation:pulse 2s ease-in-out infinite}
+  .nav-links{display:flex;align-items:center;gap:32px;list-style:none}
+  .nav-links a{color:var(--muted);text-decoration:none;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s}
+  .nav-links a:hover{color:var(--white)}
+  .nav-report-btn{background:var(--red);color:var(--white)!important;padding:10px 20px;border-radius:2px;font-size:12px!important;letter-spacing:2px!important;transition:background .2s!important}
+  .nav-report-btn:hover{background:var(--red-dark)!important}
+  .breadcrumb{position:relative;z-index:1;padding:106px 48px 0;display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#444;opacity:0;animation:fadeUp .5s ease forwards .1s}
+  .breadcrumb a{color:#444;text-decoration:none;transition:color .2s}
+  .breadcrumb a:hover{color:var(--muted)}
+  .breadcrumb-sep{color:#2a2a2a}
+  .breadcrumb-current{color:var(--muted)}
+  .page-wrap{position:relative;z-index:1;display:grid;grid-template-columns:1fr 340px;max-width:1200px;margin:0 auto;min-height:calc(100vh - 68px)}
+  .main-col{padding:48px 56px 80px;border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;text-align:center}
+  .plate-visual{display:inline-flex;flex-direction:column;border:3px solid var(--white);border-radius:6px;overflow:hidden;width:fit-content;box-shadow:0 0 0 1px rgba(255,255,255,.1),0 8px 32px rgba(0,0,0,.6);opacity:0;animation:fadeUp .6s ease forwards .25s;margin-top:40px}
+  .plate-top-bar{background:var(--green);padding:3px 20px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:3px;color:#fff;text-transform:uppercase}
+  .plate-number{background:#f5f0e0;color:#111;font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:6px;padding:10px 28px;text-align:center;line-height:1}
+  .plate-state-bar{background:#1a3a6e;padding:3px 20px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:2px;color:#fff}
+  .check-wrap{position:relative;margin:40px auto 0;width:140px;height:140px;opacity:0;animation:fadeUp .5s ease forwards .5s}
+  .check-ring{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(39,174,96,.3);animation:ringPulseOut 2.4s ease-out infinite}
+  .check-ring:nth-child(2){animation-delay:.8s}
+  .check-ring:nth-child(3){animation-delay:1.6s}
+  .check-circle-bg{position:absolute;inset:12px;border-radius:50%;background:var(--green-dim);border:1px solid var(--border-green);animation:ringExpand .7s cubic-bezier(.34,1.56,.64,1) .55s forwards,glowPulse 3s ease-in-out 1.3s infinite;transform:scale(.6);opacity:0;animation-fill-mode:forwards}
+  .check-circle-bg::after{content:'';position:absolute;left:0;right:0;height:2px;background:linear-gradient(to right,transparent,rgba(39,174,96,.4),transparent);top:0%;animation:scanLine 1.8s linear .8s forwards}
+  .check-svg{position:absolute;inset:0;width:100%;height:100%}
+  .check-svg circle{fill:none;stroke:var(--green);stroke-width:2;stroke-dasharray:360;stroke-dashoffset:360;animation:checkDraw .7s ease .5s forwards}
+  .check-svg polyline{fill:none;stroke:var(--green);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:120;stroke-dashoffset:120;animation:checkDraw .5s ease .9s forwards}
+  .clean-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--green);margin-top:24px;opacity:0;animation:fadeUp .5s ease forwards .9s}
+  .clean-headline{font-family:'Bebas Neue',sans-serif;font-size:clamp(40px,6vw,64px);letter-spacing:2px;color:var(--white);line-height:1;margin:10px 0 16px;opacity:0;animation:fadeUp .5s ease forwards 1.0s}
+  .clean-sub{font-size:15px;color:var(--muted);line-height:1.75;max-width:420px;margin:0 auto 40px;opacity:0;animation:fadeUp .5s ease forwards 1.1s}
+  .clean-sub strong{color:var(--white)}
+  .search-again-wrap{width:100%;max-width:480px;opacity:0;animation:fadeUp .5s ease forwards 1.2s}
+  .search-label-sm{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);text-align:left;margin-bottom:10px;display:block}
+  .search-box{display:flex;background:var(--grey);border:1px solid var(--grey-light);border-radius:3px;overflow:hidden;transition:border-color .2s,box-shadow .2s}
+  .search-box:focus-within{border-color:var(--green);box-shadow:0 0 0 3px rgba(39,174,96,.1)}
+  .search-plate{flex:1;background:transparent;border:none;outline:none;padding:15px 18px;font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:600;color:var(--white);letter-spacing:3px;text-transform:uppercase}
+  .search-plate::placeholder{color:#333;font-weight:400;letter-spacing:2px}
+  .search-state{background:transparent;border:none;border-left:1px solid var(--grey-light);outline:none;padding:15px 12px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;min-width:110px;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:26px}
+  .search-state option{background:var(--grey)}
+  .search-btn{background:var(--green);border:none;padding:0 24px;color:var(--white);font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;cursor:pointer;transition:background .2s;white-space:nowrap}
+  .search-btn:hover{background:#219a52}
+  .or-divider{display:flex;align-items:center;gap:14px;margin:28px 0;width:100%;max-width:480px;opacity:0;animation:fadeUp .5s ease forwards 1.25s}
+  .or-line{flex:1;height:1px;background:var(--border)}
+  .or-text{font-family:'JetBrains Mono',monospace;font-size:10px;color:#333;letter-spacing:2px}
+  .report-cta-box{width:100%;max-width:480px;border:1px solid var(--border);border-radius:3px;padding:24px;text-align:left;position:relative;overflow:hidden;opacity:0;animation:fadeUp .5s ease forwards 1.3s;transition:border-color .2s}
+  .report-cta-box:hover{border-color:var(--grey-light)}
+  .report-cta-box::before{content:'';position:absolute;top:0;left:0;bottom:0;width:3px;background:var(--red)}
+  .cta-box-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--red);margin-bottom:8px}
+  .cta-box-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:var(--white);margin-bottom:6px}
+  .cta-box-desc{font-size:12px;color:var(--muted);line-height:1.65;margin-bottom:16px}
+  .cta-box-btn{display:inline-flex;align-items:center;gap:8px;background:var(--red);color:var(--white);border:none;padding:11px 22px;border-radius:2px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;text-decoration:none;transition:background .2s}
+  .cta-box-btn:hover{background:var(--red-dark)}
+  .community-note{width:100%;max-width:480px;margin-top:20px;padding:16px 20px;background:var(--green-dim);border:1px solid var(--border-green);border-radius:3px;display:flex;gap:12px;align-items:flex-start;opacity:0;animation:fadeUp .5s ease forwards 1.35s}
+  .community-note-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+  .community-note p{font-size:12px;color:var(--muted);line-height:1.65}
+  .community-note strong{color:var(--green);font-weight:500}
+
+  /* DETERRENCE BOX */
+  .deterrence-box{width:100%;max-width:480px;margin-top:20px;padding:18px 20px;background:rgba(192,57,43,.05);border:1px solid rgba(192,57,43,.2);border-radius:3px;display:flex;gap:12px;align-items:flex-start;opacity:0;animation:fadeUp .5s ease forwards 1.4s}
+  .deterrence-icon{font-size:18px;flex-shrink:0;margin-top:2px}
+  .deterrence-text h4{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin-bottom:6px}
+  .deterrence-text p{font-size:12px;color:var(--muted);line-height:1.65}
+
+  .sidebar-col{padding:48px 28px}
+  .sidebar-card{margin-bottom:18px;border:1px solid var(--border);border-radius:3px;opacity:0;animation:fadeUp .5s ease forwards}
+  .sidebar-card:nth-child(1){animation-delay:.7s}
+  .sidebar-card:nth-child(2){animation-delay:.85s}
+  .sidebar-card:nth-child(3){animation-delay:1.0s}
+  .sidebar-card:nth-child(4){animation-delay:1.15s}
+  .sc-title{padding:12px 16px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);background:rgba(255,255,255,.02)}
+  .sc-body{padding:16px}
+  .info-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+  .info-row:last-child{border-bottom:none}
+  .info-label{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase}
+  .info-value{color:var(--white)}
+  .status-clean{display:flex;align-items:center;gap:10px;padding:14px;background:var(--green-dim);border:1px solid var(--border-green);border-radius:2px;margin-bottom:12px}
+  .status-dot{width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 2s ease-in-out infinite}
+  .status-text{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1px;color:var(--green)}
+  .meaning-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px;color:var(--muted);line-height:1.6}
+  .meaning-item:last-child{border-bottom:none}
+  .meaning-icon{flex-shrink:0;font-size:14px;margin-top:1px}
+  .area-stat{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+  .area-stat:last-child{border-bottom:none}
+  .area-label{font-size:12px;color:var(--muted)}
+  .area-val{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--white)}
+  .area-val.red{color:#e74c3c}
+  .share-btns{display:flex;flex-direction:column;gap:8px}
+  .share-btn{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--grey-light);border-radius:2px;background:transparent;color:var(--muted);cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;transition:all .2s;text-decoration:none}
+  .share-btn:hover{border-color:var(--muted);color:var(--white)}
+  .share-icon{font-size:14px}
+  .disclaimer{position:relative;z-index:1;padding:20px 48px;border-top:1px solid var(--border);display:flex;align-items:flex-start;gap:14px}
+  .disclaimer p{font-size:11px;color:#444;line-height:1.7;font-family:'JetBrains Mono',monospace;letter-spacing:.5px}
+  .disclaimer a{color:#555;text-decoration:underline}
+  footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:36px 48px;display:flex;align-items:center;justify-content:space-between}
+  .footer-logo{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--muted)}
+  .footer-links{display:flex;gap:28px;list-style:none}
+  .footer-links a{font-size:11px;color:#555;text-decoration:none;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s}
+  .footer-links a:hover{color:var(--muted)}
+  .footer-copy{font-size:11px;color:#444;font-family:'JetBrains Mono',monospace}
+  @media(max-width:900px){nav{padding:16px 20px}.nav-links li:not(:last-child){display:none}.breadcrumb{padding:106px 20px 0}.page-wrap{grid-template-columns:1fr}.main-col{border-right:none;border-bottom:1px solid var(--border);padding:40px 20px 60px}.sidebar-col{padding:32px 20px}.disclaimer{padding:20px}footer{flex-direction:column;gap:20px;padding:28px 20px;text-align:center}.footer-links{flex-wrap:wrap;justify-content:center}}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo"><div class="nav-dot"></div>PlateWatch<span style="color:var(--red)">NG</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html#recent">Recent Reports</a></li>
+    <li><a href="index.html">How It Works</a></li>
+    <li><a href="platewatch-report-connected.html" class="nav-report-btn">Report a Driver</a></li>
+  </ul>
+</nav>
+
+<div class="breadcrumb">
+  <a href="index.html">Home</a>
+  <span class="breadcrumb-sep">›</span>
+  <a href="index.html">Search</a>
+  <span class="breadcrumb-sep">›</span>
+  <span class="breadcrumb-current" id="breadcrumbPlate">Loading...</span>
+</div>
+
+<div class="page-wrap">
+  <div class="main-col">
+
+    <div class="plate-visual">
+      <div class="plate-top-bar">🇳🇬 &nbsp; Nigeria</div>
+      <div class="plate-number" id="plateDisplay">—</div>
+      <div class="plate-state-bar" id="plateStateDisplay">Nigeria</div>
+    </div>
+
+    <div class="check-wrap">
+      <div class="check-ring"></div>
+      <div class="check-ring"></div>
+      <div class="check-ring"></div>
+      <div class="check-circle-bg"></div>
+      <svg class="check-svg" viewBox="0 0 140 140">
+        <circle cx="70" cy="70" r="54" stroke-dasharray="340" stroke-dashoffset="340"/>
+        <polyline points="42,72 62,92 98,52" stroke-dasharray="120" stroke-dashoffset="120"/>
+      </svg>
+    </div>
+
+    <div class="clean-label">Verified Clean</div>
+    <h1 class="clean-headline">No Reports Found.</h1>
+    <p class="clean-sub" id="cleanSub">This plate has no community-filed reports on PlateWatchNG. Nigerian roads are safer with you on them.</p>
+
+    <div class="search-again-wrap">
+      <span class="search-label-sm">Search another plate</span>
+      <div class="search-box">
+        <input class="search-plate" type="text" placeholder="ABC 123 XY" maxlength="12" id="plateInput" autocomplete="off" spellcheck="false"/>
+        <select class="search-state" id="stateSelect">
+          <option value="">All States</option>
+          <option>Abia</option><option>Adamawa</option><option>Akwa Ibom</option><option>Anambra</option><option>Bauchi</option><option>Bayelsa</option><option>Benue</option><option>Borno</option><option>Cross River</option><option>Delta</option><option>Ebonyi</option><option>Edo</option><option>Ekiti</option><option>Enugu</option><option>FCT - Abuja</option><option>Gombe</option><option>Imo</option><option>Jigawa</option><option>Kaduna</option><option>Kano</option><option>Katsina</option><option>Kebbi</option><option>Kogi</option><option>Kwara</option><option>Lagos</option><option>Nasarawa</option><option>Niger</option><option>Ogun</option><option>Ondo</option><option>Osun</option><option>Oyo</option><option>Plateau</option><option>Rivers</option><option>Sokoto</option><option>Taraba</option><option>Yobe</option><option>Zamfara</option>
+        </select>
+        <button class="search-btn" onclick="handleSearch()">SEARCH</button>
+      </div>
+    </div>
+
+    <div class="or-divider"><div class="or-line"></div><span class="or-text">OR</span><div class="or-line"></div></div>
+
+    <div class="report-cta-box">
+      <div class="cta-box-label">Witnessed Dangerous Driving?</div>
+      <div class="cta-box-title">File a Report for a Different Plate</div>
+      <p class="cta-box-desc">If you witnessed reckless driving, road rage, or a traffic violation, you can file a report now. Your identity is never made public.</p>
+      <a href="platewatch-report-connected.html" class="cta-box-btn">+ File a Report →</a>
+    </div>
+
+    <!-- DETERRENCE MESSAGE — kept even on clean result -->
+    <div class="deterrence-box">
+      <div class="deterrence-icon">⚠️</div>
+      <div class="deterrence-text">
+        <h4>Public Accountability Notice</h4>
+        <p>PlateWatchNG publicly displays verified reports of dangerous driving. Drivers whose plates are reported appear on our live feed, visible to all Nigerians. Drive responsibly — your plate is always being watched.</p>
+      </div>
+    </div>
+
+    <div class="community-note">
+      <div class="community-note-icon">💡</div>
+      <p><strong>Clean record ≠ safe driver.</strong> This plate has simply not been reported yet. If you witness this or any vehicle behaving dangerously, you can file a report at any time. Every report helps build a safer road community.</p>
+    </div>
+
+  </div>
+
+  <div class="sidebar-col">
+    <div class="sidebar-card">
+      <div class="sc-title">Plate Information</div>
+      <div class="sc-body">
+        <div class="status-clean"><div class="status-dot"></div><span class="status-text">No Reports · Clean Record</span></div>
+        <div class="info-row"><span class="info-label">Plate</span><span class="info-value" style="font-family:'JetBrains Mono',monospace;font-weight:600" id="sidebarPlate">—</span></div>
+        <div class="info-row"><span class="info-label">State</span><span class="info-value" id="sidebarState">—</span></div>
+        <div class="info-row"><span class="info-label">Reports Filed</span><span class="info-value" style="color:var(--green);font-family:'JetBrains Mono',monospace">0</span></div>
+        <div class="info-row"><span class="info-label">Last Searched</span><span class="info-value" style="font-family:'JetBrains Mono',monospace;font-size:11px">Just now</span></div>
+        <div class="info-row"><span class="info-label">Risk Level</span><span class="info-value" style="color:var(--green)">None</span></div>
+      </div>
+    </div>
+
+    <div class="sidebar-card">
+      <div class="sc-title">What This Means</div>
+      <div class="sc-body">
+        <div class="meaning-item"><span class="meaning-icon">✅</span><span>No community member has filed a report against this plate on PlateWatchNG.</span></div>
+        <div class="meaning-item"><span class="meaning-icon">⚠️</span><span>This does not confirm the driver has a clean official record with the FRSC (Federal Road Safety Corps).</span></div>
+        <div class="meaning-item"><span class="meaning-icon">👁️</span><span>If you witness this vehicle driving dangerously, you can file a report at any time.</span></div>
+        <div class="meaning-item"><span class="meaning-icon">🔔</span><span>Reports are only shown after email verification — no unverified content is ever published.</span></div>
+      </div>
+    </div>
+
+    <div class="sidebar-card">
+      <div class="sc-title" id="stateStatsTitle">State Report Activity</div>
+      <div class="sc-body" id="stateStats">
+        <div class="area-stat"><span class="area-label">Loading state data...</span></div>
+      </div>
+    </div>
+
+    <div class="sidebar-card">
+      <div class="sc-title">Share This Result</div>
+      <div class="sc-body">
+        <p style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px">Let others know this plate came back clean.</p>
+        <div class="share-btns">
+          <a href="#" class="share-btn" id="shareTwitter"><span class="share-icon">🐦</span> Share on X / Twitter</a>
+          <a href="#" class="share-btn" id="shareWhatsapp"><span class="share-icon">💬</span> Share on WhatsApp</a>
+          <button class="share-btn" onclick="copyLink()"><span class="share-icon">🔗</span> Copy Link</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="disclaimer">
+  <p>ℹ️ &nbsp; A clean result on PlateWatchNG means no community reports have been filed and verified for this plate. It is not an official driving record. PlateWatchNG is not affiliated with the FRSC or any government body.
+  <a href="#">Terms of Use</a> · <a href="#">Privacy Policy</a> · <a href="#">How Reports Work</a></p>
+</div>
+
+<footer>
+  <div class="footer-logo">PlateWatchNG</div>
+  <ul class="footer-links">
+    <li><a href="index.html#recent">Recent Reports</a></li>
+    <li><a href="platewatch-report-connected.html">File a Report</a></li>
+    <li><a href="platewatch-dispute.html">Dispute a Report</a></li>
+    <li><a href="#">Privacy Policy</a></li>
+    <li><a href="#">Terms of Use</a></li>
+  </ul>
+  <div class="footer-copy">© 2025 PlateWatchNG</div>
+</footer>
+
+<script>
+const SUPABASE_URL  = 'https://eptmdcecnukzicflasvj.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwdG1kY2VjbnVremljZmxhc3ZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTA5MzEsImV4cCI6MjA5MTIyNjkzMX0.oqW_FsrVz4GGcdMroPgMM7KCbAp605QDP7xRQis-HTo';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+async function init(){
+  const params=new URLSearchParams(window.location.search);
+  const plate=(params.get('plate')||'').toUpperCase().trim();
+  const state=params.get('state')||'';
+
+  if(!plate){window.location.href='index.html';return;}
+
+  document.title=`${plate} — Clean Record · PlateWatchNG`;
+  document.getElementById('breadcrumbPlate').textContent=plate;
+  document.getElementById('plateDisplay').textContent=plate;
+  document.getElementById('plateStateDisplay').textContent=(state||'Nigeria')+' State';
+  document.getElementById('sidebarPlate').textContent=plate;
+  document.getElementById('sidebarState').textContent=state||'—';
+  document.getElementById('cleanSub').innerHTML=`Plate <strong>${plate}</strong> has no community-filed reports on PlateWatchNG. Nigerian roads are safer with you on them.`;
+
+  // Share links
+  const url=encodeURIComponent(window.location.href);
+  const msg=encodeURIComponent(`I checked plate ${plate} on PlateWatchNG — no reports found. Clean record.`);
+  document.getElementById('shareTwitter').href=`https://twitter.com/intent/tweet?text=${msg}&url=${url}`;
+  document.getElementById('shareWhatsapp').href=`https://wa.me/?text=${msg}%20${url}`;
+
+  // State stats
+  if(state){
+    document.getElementById('stateStatsTitle').textContent=`${state} — Report Activity`;
+    const{data:stateData}=await db.from('reports').select('incident_types,plate_number').eq('plate_state',state).eq('verified',true);
+    if(stateData&&stateData.length){
+      const plates=new Set(stateData.map(r=>r.plate_number)).size;
+      const allTags=stateData.flatMap(r=>Array.isArray(r.incident_types)?r.incident_types:[]);
+      const tagCounts={};allTags.forEach(t=>{tagCounts[t]=(tagCounts[t]||0)+1;});
+      const topOffense=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';
+      const thisMonth=stateData.filter(r=>{
+        const d=new Date(r.created_at||Date.now());
+        const now=new Date();
+        return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+      }).length;
+      document.getElementById('stateStats').innerHTML=`
+        <div class="area-stat"><span class="area-label">Total reports in ${state}</span><span class="area-val">${stateData.length}</span></div>
+        <div class="area-stat"><span class="area-label">Most common offense</span><span class="area-val red">${topOffense}</span></div>
+        <div class="area-stat"><span class="area-label">Reports this month</span><span class="area-val">${thisMonth}</span></div>
+        <div class="area-stat"><span class="area-label">Plates flagged</span><span class="area-val">${plates}</span></div>
+        <div style="margin-top:14px"><a href="index.html#recent" style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);text-decoration:none" onmouseover="this.style.color='#fff'" onmouseout="this.style.color=''">View ${state} Reports →</a></div>`;
+    } else {
+      document.getElementById('stateStats').innerHTML=`<div class="area-stat"><span class="area-label">No reports yet in ${state}</span></div>`;
+    }
+  } else {
+    document.getElementById('stateStats').innerHTML=`<div style="font-size:12px;color:var(--muted)">Select a state when searching to see local statistics.</div>`;
+  }
+}
+
+// Search another plate
+document.getElementById('plateInput').addEventListener('input',function(){this.value=this.value.toUpperCase().replace(/[^A-Z0-9\s]/g,'');});
+document.getElementById('plateInput').addEventListener('keydown',function(e){if(e.key==='Enter')handleSearch();});
+
+async function handleSearch(){
+  const plate=document.getElementById('plateInput').value.trim();
+  const state=document.getElementById('stateSelect').value;
+  if(!plate)return;
+  // Check DB first
+  const{data}=await db.from('reports').select('id').eq('plate_number',plate.toUpperCase()).eq('verified',true).limit(1);
+  if(data&&data.length){
+    window.location.href=`platewatch-profile.html?plate=${encodeURIComponent(plate.toUpperCase())}`;
+  } else {
+    window.location.href=`platewatch-clean.html?plate=${encodeURIComponent(plate.toUpperCase())}&state=${encodeURIComponent(state)}`;
+  }
+}
+
+function copyLink(){
+  navigator.clipboard.writeText(window.location.href).then(()=>alert('Link copied to clipboard!'));
+}
+
+init();
+</script>
+</body>
+</html>

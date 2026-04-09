@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verifying Report · PlateWatchNG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --black:    #0d0d0d;
+    --white:    #f4f1ec;
+    --red:      #c0392b;
+    --red-dark: #962d22;
+    --green:    #27ae60;
+    --grey:     #1c1c1c;
+    --grey-mid: #2e2e2e;
+    --grey-light:#3d3d3d;
+    --muted:    #777;
+    --border:   rgba(255,255,255,.07);
+  }
+
+  *,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content:''; position:fixed; inset:0;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events:none; z-index:0; opacity:.4;
+  }
+
+  @keyframes fadeUp  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes pulse   { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.7)} }
+  @keyframes spin    { to{transform:rotate(360deg)} }
+  @keyframes popIn   { 0%{transform:scale(.5);opacity:0} 70%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
+
+  /* NAV */
+  nav {
+    position:fixed; top:0; left:0; right:0; z-index:100;
+    display:flex; align-items:center; padding:20px 48px;
+    border-bottom:1px solid var(--border);
+    background:rgba(13,13,13,.88); backdrop-filter:blur(14px);
+  }
+  .nav-logo {
+    font-family:'Bebas Neue',sans-serif; font-size:22px;
+    letter-spacing:3px; color:var(--white); text-decoration:none;
+    display:flex; align-items:center; gap:10px;
+  }
+  .nav-dot { width:8px; height:8px; background:var(--red); border-radius:50%; animation:pulse 2s ease-in-out infinite; }
+
+  /* CARD */
+  .verify-card {
+    position:relative; z-index:1;
+    width:100%; max-width:480px;
+    border:1px solid var(--border); border-radius:4px;
+    background:var(--grey); overflow:hidden;
+    text-align:center;
+  }
+
+  /* STATES */
+  .state { display:none; padding:48px 40px; }
+  .state.active { display:block; animation:fadeUp .5s ease forwards; }
+
+  /* loading state */
+  .spinner {
+    width:40px; height:40px;
+    border:3px solid var(--grey-light); border-top-color:var(--red);
+    border-radius:50%; animation:spin .7s linear infinite;
+    margin:0 auto 20px;
+  }
+  .loading-text {
+    font-family:'JetBrains Mono',monospace; font-size:12px;
+    letter-spacing:2px; color:var(--muted); text-transform:uppercase;
+  }
+
+  /* success state */
+  .success-icon {
+    font-size:64px; display:block; margin-bottom:20px;
+    animation:popIn .6s cubic-bezier(.34,1.56,.64,1) forwards;
+  }
+  .state-title {
+    font-family:'Bebas Neue',sans-serif; font-size:48px;
+    letter-spacing:2px; color:var(--white); margin-bottom:12px; line-height:1;
+  }
+  .state-title.green { color:var(--green); }
+  .state-title.red   { color:var(--red); }
+
+  .state-sub {
+    font-size:14px; color:var(--muted); line-height:1.75;
+    margin-bottom:28px; max-width:360px; margin-left:auto; margin-right:auto;
+  }
+
+  /* plate pill shown on success */
+  .plate-pill {
+    display:inline-block;
+    font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:600;
+    letter-spacing:4px; color:#111; background:#f5f0e0;
+    padding:8px 24px; border-radius:4px; margin-bottom:28px;
+    border:2px solid rgba(255,255,255,.3);
+  }
+
+  /* note box */
+  .note-box {
+    background:rgba(39,174,96,.08); border:1px solid rgba(39,174,96,.2);
+    border-radius:3px; padding:14px 18px; margin-bottom:28px;
+    font-family:'JetBrains Mono',monospace; font-size:11px;
+    color:var(--green); letter-spacing:1px; line-height:1.6;
+  }
+
+  /* error note box */
+  .error-box {
+    background:rgba(192,57,43,.08); border:1px solid rgba(192,57,43,.2);
+    border-radius:3px; padding:14px 18px; margin-bottom:28px;
+    font-family:'JetBrains Mono',monospace; font-size:11px;
+    color:#e74c3c; letter-spacing:1px; line-height:1.6;
+  }
+
+  /* buttons */
+  .btn {
+    display:inline-block; padding:14px 28px; border-radius:2px;
+    font-family:'JetBrains Mono',monospace; font-size:11px;
+    letter-spacing:2px; text-transform:uppercase; text-decoration:none;
+    cursor:pointer; transition:all .2s; border:1px solid;
+  }
+  .btn.primary { background:var(--red); color:var(--white); border-color:var(--red); }
+  .btn.primary:hover { background:var(--red-dark); border-color:var(--red-dark); }
+  .btn.ghost   { background:transparent; color:var(--muted); border-color:var(--grey-light); margin-left:10px; }
+  .btn.ghost:hover { border-color:var(--muted); color:var(--white); }
+  .btn.green-btn { background:var(--green); color:var(--white); border-color:var(--green); }
+  .btn.green-btn:hover { background:#219a52; }
+
+  /* divider */
+  .card-divider { height:1px; background:var(--border); }
+
+  /* footer strip inside card */
+  .card-footer {
+    padding:16px 24px;
+    font-family:'JetBrains Mono',monospace; font-size:10px;
+    color:#444; letter-spacing:1px; background:rgba(255,255,255,.02);
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">
+    <div class="nav-dot"></div>
+    PlateWatch<span style="color:var(--red)">NG</span>
+  </a>
+</nav>
+
+<!-- VERIFY CARD -->
+<div class="verify-card">
+
+  <!-- STATE: LOADING -->
+  <div class="state active" id="stateLoading">
+    <div class="spinner"></div>
+    <p class="loading-text">Verifying your report...</p>
+  </div>
+
+  <!-- STATE: SUCCESS -->
+  <div class="state" id="stateSuccess">
+    <span class="success-icon">✅</span>
+    <h1 class="state-title green">Report Live!</h1>
+    <p class="state-sub">Your report has been verified and is now publicly visible on PlateWatchNG.</p>
+    <div class="plate-pill" id="successPlate">—</div>
+    <div class="note-box">📢 &nbsp; Your report is now live and searchable by other drivers.</div>
+    <div>
+      <a href="#" class="btn green-btn" id="viewReportBtn">View Report →</a>
+      <a href="index.html" class="btn ghost">← Home</a>
+    </div>
+  </div>
+
+  <!-- STATE: ALREADY VERIFIED -->
+  <div class="state" id="stateAlready">
+    <span class="success-icon">✓</span>
+    <h1 class="state-title green">Already Verified</h1>
+    <p class="state-sub">This report has already been verified and is live on PlateWatchNG.</p>
+    <div>
+      <a href="index.html" class="btn primary">← Back to Home</a>
+    </div>
+  </div>
+
+  <!-- STATE: ERROR / INVALID TOKEN -->
+  <div class="state" id="stateError">
+    <span class="success-icon">❌</span>
+    <h1 class="state-title red">Link Invalid</h1>
+    <p class="state-sub">This verification link is invalid or has already been used. If you believe this is an error, please re-submit your report.</p>
+    <div class="error-box">⚠️ &nbsp; Token not found or already used.</div>
+    <div>
+      <a href="platewatch-report.html" class="btn primary">File a New Report</a>
+      <a href="index.html" class="btn ghost">← Home</a>
+    </div>
+  </div>
+
+  <!-- STATE: NO TOKEN -->
+  <div class="state" id="stateNoToken">
+    <span class="success-icon">🔗</span>
+    <h1 class="state-title">Invalid Link</h1>
+    <p class="state-sub">No verification token was found in this link. Please use the link sent to your email after filing a report.</p>
+    <div>
+      <a href="index.html" class="btn primary">← Back to Home</a>
+    </div>
+  </div>
+
+  <div class="card-divider"></div>
+  <div class="card-footer">PlateWatchNG · Email Verification System</div>
+</div>
+
+<script>
+// ── SUPABASE INIT ──
+const SUPABASE_URL  = 'https://eptmdcecnukzicflasvj.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwdG1kY2VjbnVremljZmxhc3ZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTA5MzEsImV4cCI6MjA5MTIyNjkzMX0.oqW_FsrVz4GGcdMroPgMM7KCbAp605QDP7xRQis-HTo';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+function showState(id) {
+  document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+async function verifyToken() {
+  const params = new URLSearchParams(window.location.search);
+  const token  = params.get('token');
+
+  if(!token) { showState('stateNoToken'); return; }
+
+  // check if report exists with this token
+  const { data: existing, error: fetchError } = await db
+    .from('reports')
+    .select('id, plate_number, verified')
+    .eq('verification_token', token)
+    .single();
+
+  if(fetchError || !existing) { showState('stateError'); return; }
+
+  // already verified
+  if(existing.verified) {
+    showState('stateAlready');
+    return;
+  }
+
+  // update to verified
+  const { error: updateError } = await db
+    .from('reports')
+    .update({ verified: true })
+    .eq('verification_token', token);
+
+  if(updateError) { showState('stateError'); return; }
+
+  // success — show plate and link to profile
+  document.getElementById('successPlate').textContent = existing.plate_number;
+  document.getElementById('viewReportBtn').href =
+    `platewatch-profile.html?plate=${encodeURIComponent(existing.plate_number)}`;
+
+  showState('stateSuccess');
+}
+
+verifyToken();
+</script>
+</body>
+</html>
