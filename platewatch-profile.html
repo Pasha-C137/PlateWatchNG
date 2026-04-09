@@ -364,11 +364,6 @@ async function loadProfile(){
   document.getElementById('breadcrumbPlate').textContent=plate;
   document.getElementById('plateDisplay').textContent=plate;
 
-  // ✅ Set dispute links - header/sidebar for general plate dispute
-  const generalDisputeUrl='platewatch-dispute.html?plate='+encodeURIComponent(plate);
-  document.getElementById('disputeHeaderLink').href=generalDisputeUrl;
-  document.getElementById('disputeBoxLink').href=generalDisputeUrl;
-
   const{data,error}=await db.from('reports').select('*')
     .eq('plate_number',plate).eq('verified',true)
     .order('created_at',{ascending:false});
@@ -399,6 +394,12 @@ async function loadProfile(){
   document.getElementById('statReports').textContent=data.length;
   document.getElementById('statOffenses').textContent=uniqueTags.length;
   document.getElementById('statLastReport').textContent=timeAgo(data[0].created_at);
+
+  // ✅ FIX: Update header & sidebar dispute links to match "Report as Inaccurate" format
+  const latestReportId = allReports[0].id;
+  const disputeUrl = 'platewatch-dispute.html?plate='+encodeURIComponent(plate)+'&report='+latestReportId;
+  document.getElementById('disputeHeaderLink').href = disputeUrl;
+  document.getElementById('disputeBoxLink').href = disputeUrl;
 
   renderReports(data);
   renderSidebar(data,plate);
