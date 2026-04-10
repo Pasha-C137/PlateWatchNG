@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dispute a Report · PlateWatchNG</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;600&display.swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
@@ -22,46 +22,32 @@
   @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
   @keyframes popIn{0%{transform:scale(.5);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
   @keyframes spin{to{transform:rotate(360deg)}}
-
-  /* NAV */
   nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:20px 48px;border-bottom:1px solid var(--border);background:rgba(13,13,13,.9);backdrop-filter:blur(14px)}
   .nav-logo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--white);text-decoration:none;display:flex;align-items:center;gap:10px}
   .nav-dot{width:8px;height:8px;background:var(--red);border-radius:50%;animation:pulse 2s ease-in-out infinite}
   .nav-links{display:flex;align-items:center;gap:32px;list-style:none}
   .nav-links a{color:var(--muted);text-decoration:none;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s}
   .nav-links a:hover{color:var(--white)}
-
-  /* PAGE HEADER */
   .page-header{position:relative;z-index:1;padding:110px 48px 52px;border-bottom:1px solid var(--border);overflow:hidden}
   .page-header::after{content:'DISPUTE';position:absolute;right:-20px;top:60px;font-family:'Bebas Neue',sans-serif;font-size:200px;letter-spacing:-4px;color:rgba(255,255,255,.018);pointer-events:none;white-space:nowrap;line-height:1}
   .header-eyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px;opacity:0;animation:fadeUp .5s ease forwards .1s}
   .header-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(52px,7vw,88px);letter-spacing:2px;color:var(--white);line-height:.92;margin-bottom:16px;opacity:0;animation:fadeUp .5s ease forwards .2s}
   .header-title span{color:var(--amber)}
   .header-sub{font-size:14px;color:var(--muted);line-height:1.75;max-width:540px;opacity:0;animation:fadeUp .5s ease forwards .3s}
-
-  /* FAIRNESS BANNER */
   .fairness-banner{position:relative;z-index:1;padding:16px 48px;background:var(--amber-bg);border-bottom:1px solid var(--amber-bdr);display:flex;align-items:center;gap:14px;opacity:0;animation:fadeUp .5s ease forwards .35s}
   .fairness-icon{font-size:18px;flex-shrink:0}
   .fairness-text{font-size:13px;color:#c9984a;line-height:1.6}
   .fairness-text strong{color:var(--amber);font-weight:500}
-
-  /* LOADING */
   .loading-state{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 48px;gap:14px}
   .spinner{width:28px;height:28px;border:2px solid var(--grey-light);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite}
   .loading-text{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted)}
-
-  /* ERROR STATE */
   .error-state{position:relative;z-index:1;padding:60px 48px;text-align:center}
   .error-state h2{font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:2px;color:var(--white);margin-bottom:12px}
   .error-state p{font-size:14px;color:var(--muted);margin-bottom:24px}
   .back-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:var(--grey-mid);border:1px solid var(--grey-light);border-radius:2px;color:var(--muted);text-decoration:none;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;transition:all .2s}
   .back-btn:hover{border-color:var(--muted);color:var(--white)}
-
-  /* LAYOUT */
   .page-layout{position:relative;z-index:1;display:grid;grid-template-columns:1fr 320px;max-width:1100px;margin:0 auto}
   .form-col{padding:48px 52px 90px;border-right:1px solid var(--border)}
-
-  /* REFERENCE CARD */
   .ref-card{border:1px solid var(--amber-bdr);border-radius:3px;overflow:hidden;margin-bottom:40px;background:var(--amber-bg);opacity:0;animation:fadeUp .5s ease forwards .4s}
   .ref-card-header{padding:12px 18px;border-bottom:1px solid var(--amber-bdr);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--amber);display:flex;align-items:center;justify-content:space-between}
   .ref-card-body{padding:18px;display:flex;gap:20px;align-items:flex-start}
@@ -71,8 +57,6 @@
   .ref-label{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
   .ref-value{color:var(--white)}
   .ref-tag{display:inline-block;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:20px;font-family:'JetBrains Mono',monospace;background:rgba(192,57,43,.2);color:#e74c3c;margin-right:4px}
-
-  /* FORM SECTIONS */
   .form-section{margin-bottom:44px;opacity:0;animation:fadeUp .5s ease forwards}
   .form-section:nth-child(2){animation-delay:.45s}
   .form-section:nth-child(3){animation-delay:.55s}
@@ -82,8 +66,6 @@
   .section-num{width:32px;height:32px;border-radius:2px;flex-shrink:0;background:var(--grey-mid);border:1px solid var(--grey-light);color:var(--muted);font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;display:flex;align-items:center;justify-content:center}
   .section-title-text{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--white)}
   .section-desc{font-size:12px;color:var(--muted);margin-top:2px}
-
-  /* INPUTS */
   .field-group{margin-bottom:18px}
   .field-row{display:flex;gap:16px;margin-bottom:18px}
   .field-row .field-group{flex:1;margin-bottom:0}
@@ -97,12 +79,8 @@
   select option{background:var(--grey);color:var(--white)}
   textarea{resize:vertical;min-height:110px;line-height:1.75}
   .field-hint{font-size:11px;color:#3a3a3a;margin-top:6px;line-height:1.5}
-
-  /* ERROR BOX */
   .error-box{background:rgba(192,57,43,.1);border:1px solid rgba(192,57,43,.3);border-radius:2px;padding:14px 18px;margin-bottom:20px;display:none}
   .error-box p{font-size:12px;color:#e74c3c;line-height:1.7;font-family:'JetBrains Mono',monospace;letter-spacing:.5px}
-
-  /* REASON CARDS */
   .reason-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .reason-radio{display:none}
   .reason-label{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--grey-light);border-radius:2px;cursor:pointer;transition:all .15s;user-select:none}
@@ -112,15 +90,11 @@
   .reason-title{font-size:13px;color:var(--white);font-weight:400}
   .reason-sub{font-size:11px;color:var(--muted);line-height:1.5}
   .reason-radio:checked+.reason-label .reason-title{color:var(--amber)}
-
-  /* RELATIONSHIP TOGGLES */
   .toggle-row{display:flex;gap:8px;flex-wrap:wrap}
   .toggle-radio{display:none}
   .toggle-label{padding:10px 18px;border:1px solid var(--grey-light);border-radius:2px;cursor:pointer;font-size:13px;color:var(--muted);transition:all .15s;user-select:none}
   .toggle-label:hover{color:var(--white)}
   .toggle-radio:checked+.toggle-label{border-color:var(--amber);color:var(--amber);background:var(--amber-bg)}
-
-  /* UPLOAD */
   .upload-zone{border:1px dashed var(--grey-light);border-radius:3px;padding:32px 24px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
   .upload-zone:hover{border-color:var(--amber);background:var(--amber-bg)}
   .upload-zone.drag-over{border-color:var(--amber);background:var(--amber-bg)}
@@ -131,14 +105,10 @@
   .upload-preview{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
   .preview-thumb{width:68px;height:68px;border-radius:2px;object-fit:cover;border:1px solid var(--grey-light)}
   .preview-file{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--grey-mid);border:1px solid var(--grey-light);border-radius:2px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)}
-
-  /* IDENTITY NOTE */
   .identity-note{display:flex;gap:12px;align-items:flex-start;padding:16px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:2px;margin-bottom:18px}
   .identity-note-icon{font-size:16px;flex-shrink:0;margin-top:1px}
   .identity-note p{font-size:12px;color:var(--muted);line-height:1.65}
   .identity-note strong{color:var(--white);font-weight:500}
-
-  /* CONFIRM */
   .confirm-block{display:flex;gap:14px;align-items:flex-start;padding:18px;border:1px solid var(--border);border-radius:2px;background:var(--grey-mid);margin-bottom:24px;cursor:pointer;transition:border-color .2s}
   .confirm-block:hover{border-color:var(--grey-light)}
   .confirm-block.checked{border-color:var(--green);background:rgba(39,174,96,.05)}
@@ -148,8 +118,6 @@
   .confirm-block.checked .confirm-check-icon{display:block}
   .confirm-text{font-size:13px;color:var(--muted);line-height:1.65}
   .confirm-text strong{color:var(--white);font-weight:500}
-
-  /* SUBMIT */
   .submit-btn{width:100%;background:var(--amber);color:var(--white);border:none;padding:18px 32px;border-radius:2px;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;transition:background .2s,transform .1s;display:flex;align-items:center;justify-content:center;gap:12px}
   .submit-btn:hover:not(:disabled){background:#c8711d}
   .submit-btn:active:not(:disabled){transform:scale(.99)}
@@ -158,8 +126,6 @@
   .submit-btn.loading .btn-spinner{display:block}
   .submit-btn.loading .btn-text{opacity:.7}
   .submit-note{font-size:11px;color:#3a3a3a;margin-top:12px;line-height:1.6;font-family:'JetBrains Mono',monospace;letter-spacing:.5px}
-
-  /* SUCCESS OVERLAY */
   .success-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(13,13,13,.97);backdrop-filter:blur(14px);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px}
   .success-overlay.visible{display:flex}
   .success-icon{font-size:64px;margin-bottom:24px;animation:popIn .5s cubic-bezier(.34,1.56,.64,1) forwards}
@@ -176,8 +142,6 @@
   .success-btn.primary:hover{background:#c8711d}
   .success-btn.ghost{background:transparent;color:var(--muted);border-color:var(--grey-light)}
   .success-btn.ghost:hover{border-color:var(--muted);color:var(--white)}
-
-  /* SIDEBAR */
   .sidebar-col{padding:48px 28px}
   .sidebar-block{margin-bottom:18px;border:1px solid var(--border);border-radius:3px;opacity:0;animation:fadeUp .5s ease forwards}
   .sidebar-block:nth-child(1){animation-delay:.5s}
@@ -202,15 +166,12 @@
   .contact-icon{font-size:14px;flex-shrink:0}
   .contact-link{color:var(--muted);text-decoration:none;transition:color .2s}
   .contact-link:hover{color:var(--white)}
-
-  /* FOOTER */
   footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:28px 48px;display:flex;align-items:center;justify-content:space-between}
   .footer-logo{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--muted)}
   .footer-links{display:flex;gap:24px;list-style:none}
   .footer-links a{font-size:11px;color:#555;text-decoration:none;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s}
   .footer-links a:hover{color:var(--muted)}
   .footer-copy{font-size:11px;color:#444;font-family:'JetBrains Mono',monospace}
-
   @media(max-width:900px){
     nav{padding:16px 20px}
     .nav-links li:not(:last-child){display:none}
@@ -232,17 +193,17 @@
 
 <!-- SUCCESS OVERLAY -->
 <div class="success-overlay" id="successOverlay">
-  <div class="success-icon">📋</div>
-  <h2 class="success-title">Dispute Filed</h2>
-  <p class="success-sub">Your dispute has been received and logged. Our review team will assess it within 48 hours and notify you by email.</p>
+  <div class="success-icon">📧</div>
+  <h2 class="success-title">Verification Email Sent</h2>
+  <p class="success-sub">Check your inbox. Your dispute will be reviewed only after you verify your email address.</p>
   <div class="success-timeline">
     <div class="stl-item">
       <div class="stl-icon">📧</div>
-      <div class="stl-text"><strong>Step 1 — Confirmation Email</strong>Check your inbox. We've sent a confirmation of your dispute submission.</div>
+      <div class="stl-text"><strong>Step 1 — Verify Email</strong>Click the verification link we just sent to your inbox.</div>
     </div>
     <div class="stl-item">
       <div class="stl-icon">🔍</div>
-      <div class="stl-text"><strong>Step 2 — Review (within 48hrs)</strong>Our team reviews the original report alongside your dispute and any evidence submitted.</div>
+      <div class="stl-text"><strong>Step 2 — Review (within 48hrs)</strong>After verification, our team reviews your dispute alongside the original report.</div>
     </div>
     <div class="stl-item">
       <div class="stl-icon">⚖️</div>
@@ -423,7 +384,7 @@
           <div class="field-group">
             <label class="field-label">Email Address <span class="required-star">*</span></label>
             <input type="email" id="disputerEmail" placeholder="your@email.com"/>
-            <div class="field-hint">You will receive a confirmation now, and the review outcome within 48 hours.</div>
+            <div class="field-hint">You will receive a verification email now, and the review outcome within 48 hours.</div>
           </div>
 
           <!-- Error box -->
@@ -450,7 +411,7 @@
         <div class="sb-title">Review Process</div>
         <div class="sb-body">
           <div class="process-step"><div class="ps-num">1</div><div class="ps-text"><strong>Submit Dispute</strong>You fill this form and submit your case.</div></div>
-          <div class="process-step"><div class="ps-num">2</div><div class="ps-text"><strong>Confirmation Sent</strong>You receive an email confirming the dispute was received.</div></div>
+          <div class="process-step"><div class="ps-num">2</div><div class="ps-text"><strong>Verify Email</strong>Click the verification link sent to your inbox to confirm your dispute.</div></div>
           <div class="process-step"><div class="ps-num">3</div><div class="ps-text"><strong>Human Review (48hrs)</strong>Our team reviews both sides — the original report and your dispute — plus any evidence from both parties.</div></div>
           <div class="process-step"><div class="ps-num">4</div><div class="ps-text"><strong>Decision Issued</strong>The report is upheld, amended, or removed. Both parties are notified.</div></div>
         </div>
@@ -553,12 +514,9 @@ async function loadReport(){
   const reportId = params.get('report');
   const plateFallback = params.get('plate');
 
-  // If no report ID passed, show error state
   if(!reportId){
     document.getElementById('loadingState').style.display='none';
     if(plateFallback){
-      // Came from dispute button on profile page without specific report ID
-      // Show form anyway but without specific report reference
       document.getElementById('refPlate').textContent = plateFallback;
       document.getElementById('refReportNum').textContent = 'General Dispute';
       document.getElementById('refState').textContent = '—';
@@ -576,9 +534,7 @@ async function loadReport(){
     return;
   }
 
-  // Fetch the specific report from Supabase
   const{data,error}=await db.from('reports').select('*').eq('id',reportId).single();
-
   document.getElementById('loadingState').style.display='none';
 
   if(error||!data){
@@ -586,11 +542,9 @@ async function loadReport(){
     return;
   }
 
-  // Store for submission
   currentReportId = data.id;
   currentPlate = data.plate_number;
 
-  // Populate reference card with real data
   const tags = parseTags(data.incident_types);
   document.getElementById('refPlate').textContent = data.plate_number;
   document.getElementById('refReportNum').textContent = `Report · ${formatDate(data.incident_date)}`;
@@ -599,7 +553,6 @@ async function loadReport(){
   document.getElementById('refOffenses').innerHTML = tags.map(t=>`<span class="ref-tag">${t}</span>`).join('');
   document.getElementById('refLocation').textContent = data.location||'—';
 
-  // Update nav and page title
   document.title=`Dispute ${data.plate_number} · PlateWatchNG`;
   document.getElementById('navBackToReport').href=`platewatch-profile.html?plate=${encodeURIComponent(data.plate_number)}`;
   document.getElementById('backToProfile').href=`platewatch-profile.html?plate=${encodeURIComponent(data.plate_number)}`;
@@ -628,17 +581,19 @@ zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
 zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');handleFiles(e.dataTransfer.files);});
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  SUBMIT DISPUTE TO SUPABASE
+//  SUBMIT DISPUTE VIA EDGE FUNCTION (EMAIL VERIFICATION FLOW)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function handleSubmit(){
   hideError();
-if (!currentReportId) {
+
+  if (!currentReportId) {
     showError('Missing report reference. Please start your dispute from the report page.');
     const btn = document.getElementById('submitBtn');
     btn.disabled = false;
     btn.classList.remove('loading');
     return;
   }
+
   const reason    = document.querySelector('input[name="reason"]:checked');
   const relation  = document.querySelector('input[name="relation"]:checked');
   const name      = document.getElementById('disputerName').value.trim();
@@ -662,31 +617,29 @@ if (!currentReportId) {
   btn.disabled=true;btn.classList.add('loading');
 
   try {
-    // Build insert payload — report_id is required
-    const payload = {
-      plate_number:    currentPlate,
-      reason:          reason.value,
-      relationship:    relation ? relation.value : 'not_specified',
-      disputer_name:   name,
-      disputer_email:  email,
-      statement:       statement,
-      status:          'pending'
-    };
+    // ✅ CALL EDGE FUNCTION FOR EMAIL VERIFICATION FLOW
+    const{data,error:fnError}=await db.functions.invoke('send-dispute-confirmation',{
+      body:{
+        email: email,
+        plate_number: currentPlate,
+        report_id: currentReportId,
+        reason: reason.value,
+        relationship: relation ? relation.value : 'not_specified',
+        disputer_name: name,
+        disputer_phone: phone,
+        statement: statement,
+        location: location
+      }
+    });
 
-    // Only include report_id if we have a real one
-    if(currentReportId){
-      payload.report_id = currentReportId;
-    }
+    if(fnError) throw fnError;
 
-    const{error}=await db.from('disputes').insert([payload]);
-    if(error) throw error;
-
-    // Success
+    // ✅ Show verification email success state
     document.getElementById('successOverlay').classList.add('visible');
 
   } catch(err){
     console.error('Dispute submit error:', err);
-    showError('Something went wrong submitting your dispute: '+err.message+'. Please try again.');
+    showError('Something went wrong: '+err.message+'. Please try again.');
     btn.disabled=false;
     btn.classList.remove('loading');
   }
