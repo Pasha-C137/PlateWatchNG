@@ -684,13 +684,6 @@ if (!currentReportId) {
     // Success
     document.getElementById('successOverlay').classList.add('visible');
 
-    await db.functions.invoke('send-dispute-confirmation', {
-  body: {
-    email: email,
-    plate_number: plateParam,
-    reason: reason.value
-  }
-});
   } catch(err){
     console.error('Dispute submit error:', err);
     showError('Something went wrong submitting your dispute: '+err.message+'. Please try again.');
