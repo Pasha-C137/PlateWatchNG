@@ -2,8 +2,8 @@ name: Keep Supabase Alive
 
 on:
   schedule:
-    - cron: '0 12 * * 1,4'  # Runs every Monday and Thursday at 12pm UTC
-  workflow_dispatch:         # Lets you trigger it manually too
+    - cron: '0 12 * * 1,4'
+  workflow_dispatch:
 
 jobs:
   ping:
@@ -11,7 +11,9 @@ jobs:
     steps:
       - name: Ping Supabase database
         run: |
-          curl -s "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+          curl -v "${{ secrets.SUPABASE_URL }}/rest/v1/" \
             -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
-          echo "Ping sent successfully!"
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            --max-time 30 \
+            -w "\nHTTP Status: %{http_code}\n" || true
+          echo "Done!"
